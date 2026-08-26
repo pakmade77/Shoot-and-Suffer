@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🚀 Panduan Migrasi: GitHub + Supabase + Vercel | Shoot & Suffer</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #07090e;
+      --surface: #0f1422;
+      --surface-card: #151b2e;
+      --surface-hover: #1c243d;
+      --border: rgba(255, 255, 255, 0.08);
+      --border-accent: rgba(249, 115, 22, 0.4);
+      --orange: #f97316;
+      --amber: #f59e0b;
+      --gold: #fbbf24;
+      --green: #10b981;
+      --blue: #3b82f6;
+      --purple: #8b5cf6;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      line-height: 1.6;
+      padding: 2rem 1rem 4rem;
+      min-height: 100vh;
+      background-image: 
+        radial-gradient(circle at 20% 15%, rgba(249, 115, 22, 0.12) 0%, transparent 40%),
+        radial-gradient(circle at 80% 80%, rgba(59, 130, 246, 0.08) 0%, transparent 50%);
+      background-attachment: fixed;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    /* HEADER */
+    .header {
+      text-align: center;
+      margin-bottom: 2.5rem;
+      padding: 2rem;
+      background: linear-gradient(180deg, rgba(249, 115, 22, 0.15), rgba(15, 20, 34, 0.6));
+      border: 1px solid var(--border-accent);
+      border-radius: 28px;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.7);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 16px;
+      background: rgba(249, 115, 22, 0.15);
+      border: 1px solid rgba(249, 115, 22, 0.3);
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      color: var(--amber);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 1rem;
+    }
+
+    .title {
+      font-size: 2.4rem;
+      font-weight: 900;
+      line-height: 1.2;
+      text-transform: uppercase;
+      background: linear-gradient(135deg, #fff 30%, var(--amber) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.75rem;
+    }
+
+    .subtitle {
+      font-size: 1rem;
+      color: var(--text-muted);
+      max-width: 650px;
+      margin: 0 auto;
+    }
+
+    /* FLOW DIAGRAM */
+    .flow-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2.5rem;
+    }
+
+    .flow-node {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 1.25rem;
+      text-align: center;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+    }
+
+    .flow-node:hover {
+      transform: translateY(-3px);
+      border-color: var(--orange);
+      box-shadow: 0 10px 25px -5px rgba(249, 115, 22, 0.2);
+    }
+
+    .flow-icon {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+      display: inline-block;
+    }
+
+    .flow-title {
+      font-weight: 800;
+      font-size: 0.95rem;
+      color: #fff;
+    }
+
+    .flow-desc {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* STEP CARDS */
+    .step-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 2rem;
+      margin-bottom: 1.75rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+      position: relative;
+      transition: border-color 0.3s;
+    }
+
+    .step-card:hover {
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .step-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 1.25rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 1rem;
+    }
+
+    .step-num {
+      width: 44px;
+      height: 44px;
+      background: linear-gradient(135deg, var(--orange), var(--amber));
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.25rem;
+      font-weight: 900;
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(249, 115, 22, 0.4);
+      flex-shrink: 0;
+    }
+
+    .step-title {
+      font-size: 1.3rem;
+      font-weight: 800;
+      color: #fff;
+    }
+
+    .step-subtitle {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .step-body ol {
+      padding-left: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+
+    .step-body li {
+      margin-bottom: 0.75rem;
+      color: #cbd5e1;
+      font-size: 0.95rem;
+    }
+
+    .step-body strong {
+      color: #fff;
+    }
+
+    /* CODE BOX & COPY BUTTON */
+    .code-box {
+      background: #090d16;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 16px;
+      padding: 1rem 1.25rem;
+      position: relative;
+      margin: 0.75rem 0 1.25rem;
+    }
+
+    .code-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-bottom: 0.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    pre {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      color: #38bdf8;
+      overflow-x: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .copy-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 8px;
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 6px 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s;
+    }
+
+    .copy-btn:hover {
+      background: var(--orange);
+      border-color: var(--orange);
+      transform: translateY(-1px);
+    }
+
+    .copy-btn.copied {
+      background: var(--green);
+      border-color: var(--green);
+    }
+
+    /* ALERT BOX */
+    .alert-box {
+      background: rgba(249, 115, 22, 0.08);
+      border: 1px solid rgba(249, 115, 22, 0.25);
+      border-radius: 16px;
+      padding: 1rem;
+      font-size: 0.88rem;
+      color: #fdba74;
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+      margin: 1rem 0;
+    }
+
+    .alert-box.success {
+      background: rgba(16, 185, 129, 0.08);
+      border-color: rgba(16, 185, 129, 0.25);
+      color: #6ee7b7;
+    }
+
+    .alert-icon {
+      font-size: 1.2rem;
+      flex-shrink: 0;
+    }
+
+    /* BUTTON LINK */
+    .btn-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: linear-gradient(135deg, var(--orange), var(--amber));
+      color: #fff;
+      text-decoration: none;
+      font-weight: 800;
+      font-size: 0.85rem;
+      padding: 10px 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(249, 115, 22, 0.3);
+      transition: all 0.2s;
+      margin-top: 0.5rem;
+    }
+
+    .btn-link:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(249, 115, 22, 0.5);
+    }
+
+    /* CHECKLIST */
+    .checklist {
+      list-style: none;
+      padding-left: 0 !important;
+    }
+
+    .checklist-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 14px;
+      background: var(--surface-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 8px !important;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .checklist-item:hover {
+      background: var(--surface-hover);
+    }
+
+    .checklist-item.done {
+      background: rgba(16, 185, 129, 0.1);
+      border-color: rgba(16, 185, 129, 0.3);
+      text-decoration: line-through;
+      color: var(--text-muted);
+    }
+
+    .checklist-item input {
+      accent-color: var(--orange);
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+
+    /* FOOTER */
+    .footer {
+      text-align: center;
+      margin-top: 3rem;
+      padding-top: 2rem;
+      border-top: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    
+    <!-- HEADER -->
+    <header class="header">
+      <div class="badge-pill">
+        <span>⚡ 100% GRATIS & CLOUD HOSTED</span>
+      </div>
+      <h1 class="title">🏀 Panduan Deploy Shoot & Suffer</h1>
+      <p class="subtitle">
+        Publikasikan game basket kantor ke internet agar bisa diakses dari HP / Laptop mana saja melalui domain publik resmi.
+      </p>
+    </header>
+
+    <!-- ARCHITECTURE FLOW -->
+    <section class="flow-grid">
+      <div class="flow-node">
+        <div class="flow-icon">🐘</div>
+        <div class="flow-title">1. Supabase</div>
+        <div class="flow-desc">Database Cloud PostgreSQL</div>
+      </div>
+      <div class="flow-node">
+        <div class="flow-icon">🐙</div>
+        <div class="flow-title">2. GitHub</div>
+        <div class="flow-desc">Penyimpanan Source Code</div>
+      </div>
+      <div class="flow-node">
+        <div class="flow-icon">▲</div>
+        <div class="flow-title">3. Vercel</div>
+        <div class="flow-desc">Web Hosting & Domain Publik</div>
+      </div>
+      <div class="flow-node" style="border-color: var(--green);">
+        <div class="flow-icon">🌐</div>
+        <div class="flow-title">4. Online Web</div>
+        <div class="flow-desc">Akses Dari Mana Saja</div>
+      </div>
+    </section>
+
+    <!-- PROGRESS CHECKLIST -->
+    <div class="step-card" style="background: rgba(249, 115, 22, 0.04); border-color: var(--border-accent);">
+      <h3 style="font-size: 1.1rem; font-weight: 800; margin-bottom: 0.75rem; color: var(--amber);">
+        📋 Checklist Progress Migrasi:
+      </h3>
+      <ul class="checklist">
+        <li class="checklist-item" onclick="toggleCheck(this)">
+          <input type="checkbox" />
+          <span>Langkah 1: Buat Database di Supabase & Ambil Connection String</span>
+        </li>
+        <li class="checklist-item" onclick="toggleCheck(this)">
+          <input type="checkbox" />
+          <span>Langkah 2: Buat Repo di GitHub & Push Source Code</span>
+        </li>
+        <li class="checklist-item" onclick="toggleCheck(this)">
+          <input type="checkbox" />
+          <span>Langkah 3: Deploy Project ke Vercel & Masukkan Env Variables</span>
+        </li>
+        <li class="checklist-item" onclick="toggleCheck(this)">
+          <input type="checkbox" />
+          <span>Langkah 4: Inisialisasi 9 Pemain & Foto di Web Baru</span>
+        </li>
+      </ul>
+    </div>
+
+    <!-- STEP 1: SUPABASE -->
+    <div class="step-card">
+      <div class="step-header">
+        <div class="step-num">1</div>
+        <div>
+          <h2 class="step-title">Buat Database di Supabase (Gratis)</h2>
+          <p class="step-subtitle">Supabase menyediakan database PostgreSQL cloud berkecepatan tinggi gratis.</p>
+        </div>
+      </div>
+
+      <div class="step-body">
+        <ol>
+          <li>Buka <strong><a href="https://supabase.com" target="_blank" style="color: #38bdf8;">supabase.com</a></strong> dan login menggunakan akun GitHub kamu.</li>
+          <li>Klik tombol <strong>"New Project"</strong>.</li>
+          <li>Isi formulir:
+            <ul>
+              <li><strong>Name:</strong> <code>shoot-and-suffer</code></li>
+              <li><strong>Database Password:</strong> Buat password kuat (misal: <code>ShootSuffer2026!</code>) <em>(Simpan di Notepad!)</em></li>
+              <li><strong>Region:</strong> Pilih <strong>Southeast Asia (Singapore)</strong></li>
+            </ul>
+          </li>
+          <li>Klik <strong>"Create new project"</strong> dan tunggu 1 menit hingga aktif.</li>
+          <li><strong>Ambil Connection String:</strong>
+            <ul>
+              <li>Klik menu <strong>Project Settings (⚙️)</strong> di kiri bawah &gt; <strong>Database</strong>.</li>
+              <li>Scroll ke bagian <strong>Connection string</strong> &gt; pilih tab <strong>URI</strong>.</li>
+              <li>Di dropdown mode:
+                <br>• <strong>Transaction (Port 6543)</strong> &rarr; Salin sebagai <code>DATABASE_URL</code>
+                <br>• <strong>Session (Port 5432)</strong> &rarr; Salin sebagai <code>DIRECT_URL</code>
+              </li>
+            </ul>
+          </li>
+        </ol>
+
+        <div class="alert-box">
+          <div class="alert-icon">⚠️</div>
+          <div>
+            <strong>Penting:</strong> Di dalam connection string yang disalin, ganti tulisan <code>[PASSWORD]</code> dengan password database yang kamu buat di langkah 3.
+          </div>
+        </div>
+
+        <a href="https://supabase.com/dashboard" target="_blank" class="btn-link">
+          Buka Supabase Dashboard &rarr;
+        </a>
+      </div>
+    </div>
+
+    <!-- STEP 2: GITHUB -->
+    <div class="step-card">
+      <div class="step-header">
+        <div class="step-num">2</div>
+        <div>
+          <h2 class="step-title">Upload Kode ke GitHub</h2>
+          <p class="step-subtitle">Semua kode, logika sudden death, dan foto profil akan disimpan di GitHub.</p>
+        </div>
+      </div>
+
+      <div class="step-body">
+        <ol>
+          <li>Buka <strong><a href="https://github.com/new" target="_blank" style="color: #38bdf8;">github.com/new</a></strong> dan buat repository baru.</li>
+          <li>Beri nama: <strong><code>shoot-and-suffer</code></strong> (boleh pilih Public atau Private).</li>
+          <li>Biarkan pilihan lain kosong &gt; klik <strong>"Create repository"</strong>.</li>
+          <li>Buka PowerShell di komputer kamu, lalu jalankan perintah berikut:</li>
+        </ol>
+
+        <div class="code-box">
+          <div class="code-header">
+            <span>PowerShell Command</span>
+          </div>
+          <button class="copy-btn" onclick="copyCode(this)">📋 Copy Command</button>
+          <pre>git branch -M main
+git remote add origin https://github.com/USERNAME_KAMU/shoot-and-suffer.git
+git push -u origin main</pre>
+        </div>
+
+        <p style="font-size: 0.85rem; color: var(--text-muted);">
+          <em>* Ganti <code>USERNAME_KAMU</code> dengan username akun GitHub kamu.</em>
+        </p>
+
+        <a href="https://github.com/new" target="_blank" class="btn-link">
+          Buat Repository di GitHub &rarr;
+        </a>
+      </div>
+    </div>
+
+    <!-- STEP 3: VERCEL -->
+    <div class="step-card">
+      <div class="step-header">
+        <div class="step-num">3</div>
+        <div>
+          <h2 class="step-title">Deploy ke Vercel (Hosting Gratis)</h2>
+          <p class="step-subtitle">Vercel akan mem-build dan memberikan domain publik untuk game kamu.</p>
+        </div>
+      </div>
+
+      <div class="step-body">
+        <ol>
+          <li>Buka <strong><a href="https://vercel.com" target="_blank" style="color: #38bdf8;">vercel.com</a></strong> dan login dengan akun GitHub.</li>
+          <li>Klik <strong>"Add New..." &gt; "Project"</strong>.</li>
+          <li>Pilih repository <strong><code>shoot-and-suffer</code></strong> &gt; klik <strong>"Import"</strong>.</li>
+          <li>Buka menu <strong>"Environment Variables"</strong> dan tambahkan 2 variabel dari Supabase:
+            <ul>
+              <li><strong>Key:</strong> <code>DATABASE_URL</code> &rarr; <strong>Value:</strong> <em>(Paste connection string port 6543)</em></li>
+              <li><strong>Key:</strong> <code>DIRECT_URL</code> &rarr; <strong>Value:</strong> <em>(Paste connection string port 5432)</em></li>
+            </ul>
+          </li>
+          <li>Klik tombol biru <strong>"Deploy"</strong>!</li>
+          <li>Tunggu sekitar 1 menit hingga selesai. Web kamu sekarang LIVE dengan domain (contoh: <code>https://shoot-and-suffer.vercel.app</code>).</li>
+        </ol>
+
+        <a href="https://vercel.com/new" target="_blank" class="btn-link">
+          Buka Vercel Deployment &rarr;
+        </a>
+      </div>
+    </div>
+
+    <!-- STEP 4: INITIALIZE DATA -->
+    <div class="step-card">
+      <div class="step-header">
+        <div class="step-num" style="background: linear-gradient(135deg, var(--green), #059669);">4</div>
+        <div>
+          <h2 class="step-title">Inisialisasi 9 Pemain di Web Baru</h2>
+          <p class="step-subtitle">Langkah terakhir untuk memasukkan tabel & foto pemain ke database baru.</p>
+        </div>
+      </div>
+
+      <div class="step-body">
+        <ol>
+          <li>Buka link website Vercel yang sudah jadi di browser HP / Laptop.</li>
+          <li>Masuk ke menu <strong>⚙️ Settings</strong> (atau buka <code>https://DOMAIN-KAMU.vercel.app/settings</code>).</li>
+          <li>Di bagian <strong>Data & Reset</strong>, klik tombol merah <strong>"Reset Demo Data"</strong> &gt; <strong>"Yes, Reset Data"</strong>.</li>
+        </ol>
+
+        <div class="alert-box success">
+          <div class="alert-icon">🎉</div>
+          <div>
+            <strong>SELESAI!</strong> Seluruh 9 pemain lengkap (Azhar, Dewa, JC, Mul, Naufal, Prabu, Surya, Yasa, Zainul) beserta foto profil dan fitur Sudden Death kini aktif di cloud dan bisa dimainkan kapan saja dari mana saja!
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+      <p>🏀 <strong>Shoot & Suffer</strong> — Coffee Break Basketball League</p>
+      <p style="margin-top: 4px;">File panduan ini tersimpan di komputer kamu dan bisa dibuka kapan saja secara offline.</p>
+    </footer>
+
+  </div>
+
+  <script>
+    function copyCode(btn) {
+      const pre = btn.parentElement.querySelector('pre');
+      navigator.clipboard.writeText(pre.innerText).then(() => {
+        const originalText = btn.innerText;
+        btn.innerText = '✅ Copied!';
+        btn.classList.add('copied');
+        setTimeout(() => {
+          btn.innerText = originalText;
+          btn.classList.remove('copied');
+        }, 2000);
+      });
+    }
+
+    function toggleCheck(item) {
+      const checkbox = item.querySelector('input');
+      checkbox.checked = !checkbox.checked;
+      item.classList.toggle('done', checkbox.checked);
+    }
+  </script>
+</body>
+</html>
