@@ -1,0 +1,43 @@
+services:
+  # MySQL Database Container
+  db:
+    image: mysql:8.0
+    container_name: shoot-suffer-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: shoot_root_password
+      MYSQL_DATABASE: shoot_suffer
+      MYSQL_USER: shoot_user
+      MYSQL_PASSWORD: shoot_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pshoot_root_password"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    command: --default-authentication-plugin=mysql_native_password
+
+  # Next.js Application Server Container
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: shoot-suffer-app
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - HOSTNAME=0.0.0.0
+      - DATABASE_URL=mysql://shoot_user:shoot_password@db:3306/shoot_suffer
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  mysql_data:
+    driver: local
