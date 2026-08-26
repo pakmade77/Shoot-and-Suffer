@@ -4,7 +4,7 @@ import { Navbar } from "@/components/layout/Navbar";
 import { MobileNav } from "@/components/layout/MobileNav";
 
 export const metadata: Metadata = {
-  title: "🏀 SHOOT & SUFFER — Coffee Break Basketball League",
+  title: "SHOOT & SUFFER — Coffee Break Basketball League",
   description: "Internal office basketball scoring and push-up punishment tracker. Shoot. Score. Survive.",
   manifest: "/manifest.json",
   appleWebApp: {

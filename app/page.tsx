@@ -117,7 +117,7 @@ export default function HomePage() {
               Coffee Break Basketball League
             </div>
             <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-white uppercase">
-              🏀 SHOOT &amp; SUFFER
+              SHOOT &amp; SUFFER
             </h1>
             <p className="text-base sm:text-lg font-medium text-gray-300 flex items-center gap-2">
               <span>Shoot.</span>
