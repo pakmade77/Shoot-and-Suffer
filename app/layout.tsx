@@ -6,6 +6,16 @@ import { MobileNav } from "@/components/layout/MobileNav";
 export const metadata: Metadata = {
   title: "🏀 SHOOT & SUFFER — Coffee Break Basketball League",
   description: "Internal office basketball scoring and push-up punishment tracker. Shoot. Score. Survive.",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Shoot & Suffer",
+  },
+  icons: {
+    icon: "/icon.svg",
+    apple: "/icon.svg",
+  },
 };
 
 export const viewport: Viewport = {
@@ -13,6 +23,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  themeColor: "#f97316",
 };
 
 export default function RootLayout({
