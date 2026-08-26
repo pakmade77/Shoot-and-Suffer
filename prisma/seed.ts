@@ -3,25 +3,20 @@ import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 
 const defaultPlayers = [
-  { name: "Azhar", nickname: "Clutch King", avatar: "/uploads/avatars/azhar.png" },
-  { name: "Dewa", nickname: null, avatar: "/uploads/avatars/dewa.png" },
+  { name: "Boo", nickname: "Shot Monarch", avatar: "/uploads/avatars/prabu.png" },
+  { name: "Dewa", nickname: "Casual Shooter", avatar: "/uploads/avatars/dewa.png" },
+  { name: "iMD", nickname: "Mr. Mboiss", avatar: "/uploads/avatars/mul.png" },
   { name: "JC", nickname: "Timezone Academy", avatar: "/uploads/avatars/jc.png" },
-  { name: "Mul", nickname: "Captain", avatar: "/uploads/avatars/mul.png" },
   { name: "Naufal", nickname: "Rim Shaker", avatar: "/uploads/avatars/naufal.png" },
-  { name: "Prabu", nickname: "The Tank", avatar: "/uploads/avatars/prabu.png" },
+  { name: "Rogak's Is Back", nickname: "Clutch King", avatar: "/uploads/avatars/azhar.png" },
   { name: "Surya", nickname: "The Anchor", avatar: "/uploads/avatars/surya.png" },
-  { name: "Yasa", nickname: null, avatar: "/uploads/avatars/yasa.png" },
+  { name: "Yasa", nickname: "Casual Shooter", avatar: "/uploads/avatars/yasa.png" },
   { name: "Zainul", nickname: "Sharpshooter", avatar: "/uploads/avatars/zainul.png" },
 ];
 
 export async function seedDatabase() {
   console.log("🌱 Resetting match records and initializing players...");
 
-  // 1. Clean all match records
-  await prisma.gamePlayer.deleteMany({});
-  await prisma.game.deleteMany({});
-
-  // 2. Ensure all 9 players exist with their custom avatars
   for (const p of defaultPlayers) {
     const existing = await prisma.player.findFirst({
       where: { name: p.name },
@@ -48,11 +43,9 @@ export async function seedDatabase() {
     }
   }
 
-  console.log(`✅ All 9 players reset to 0 matches with custom avatars preserved.`);
-  console.log("🎉 Database reset finished successfully.");
+  console.log(`✅ All 9 players preserved with custom avatars and nicknames.`);
 }
 
-// Execute if run via CLI
 if (require.main === module) {
   seedDatabase()
     .catch((e) => {
