@@ -316,6 +316,55 @@ class SoundManager {
       // Ignore
     }
   }
+
+  // 🏁 Referee Whistle: Energetic double-trill whistle
+  public playWhistle() {
+    if (!this.enabled) return;
+    try {
+      this.initCtx();
+      if (!this.ctx) return;
+
+      const now = this.ctx.currentTime;
+      const bursts = [0, 0.14];
+
+      bursts.forEach((startTime) => {
+        const osc = this.ctx!.createOscillator();
+        const gain = this.ctx!.createGain();
+
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(2600, now + startTime);
+        osc.frequency.linearRampToValueAtTime(2900, now + startTime + 0.04);
+        osc.frequency.linearRampToValueAtTime(2700, now + startTime + 0.08);
+
+        gain.gain.setValueAtTime(0.25, now + startTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + startTime + 0.1);
+
+        osc.connect(gain);
+        gain.connect(this.ctx!.destination);
+
+        osc.start(now + startTime);
+        osc.stop(now + startTime + 0.1);
+      });
+    } catch {
+      // Ignore
+    }
+  }
+
+  // 💥 Slam Dunk: Powerful rim impact + whoosh
+  public playSlamDunk() {
+    if (!this.enabled) return;
+    try {
+      this.initCtx();
+      if (!this.ctx) return;
+
+      this.playBrick();
+      setTimeout(() => this.playSwish(), 60);
+      setTimeout(() => this.playWhistle(), 250);
+    } catch {
+      // Ignore
+    }
+  }
 }
 
 export const sounds = new SoundManager();
+
