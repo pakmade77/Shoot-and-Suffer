@@ -26,7 +26,7 @@ export function BasketballEntrance({
   useEffect(() => {
     // Sound effect sequence
     const t0 = setTimeout(() => {
-      sounds.playBrick(); // initial bounce sound
+      sounds.playBounce(); // initial bounce sound
     }, 400);
 
     const t1 = setTimeout(() => {

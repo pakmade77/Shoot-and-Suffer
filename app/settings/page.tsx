@@ -180,6 +180,68 @@ export default function SettingsPage() {
               />
             </button>
           </div>
+
+          {/* Sound Effect Previews */}
+          <div className="pt-2">
+            <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2.5">
+              🔊 Test Sound Effects
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+              <button
+                type="button"
+                onClick={() => sounds.playSwish()}
+                className="flex items-center justify-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs font-black uppercase text-emerald-300 hover:bg-emerald-500/20 active:scale-95 transition-all shadow-sm"
+              >
+                <span>🏀</span>
+                <span>Congrats! (Masuk)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => sounds.playBrick()}
+                className="flex items-center justify-center gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-xs font-black uppercase text-rose-300 hover:bg-rose-500/20 active:scale-95 transition-all shadow-sm"
+              >
+                <span>🤡</span>
+                <span>Funny Fail (Miss)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => sounds.playVictory()}
+                className="flex items-center justify-center gap-2 rounded-xl border border-champion-gold/30 bg-champion-gold/10 p-3 text-xs font-black uppercase text-champion-gold hover:bg-champion-gold/20 active:scale-95 transition-all shadow-sm"
+              >
+                <span>🏆</span>
+                <span>Victory Fanfare</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => sounds.playBuzzer()}
+                className="flex items-center justify-center gap-2 rounded-xl border border-hoop-orange/30 bg-hoop-orange/10 p-3 text-xs font-black uppercase text-hoop-orange hover:bg-hoop-orange/20 active:scale-95 transition-all shadow-sm"
+              >
+                <span>📢</span>
+                <span>Buzzer</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => sounds.playWhistle()}
+                className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 p-3 text-xs font-black uppercase text-gray-200 hover:bg-white/10 active:scale-95 transition-all shadow-sm"
+              >
+                <span>🏁</span>
+                <span>Whistle</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => sounds.playBounce()}
+                className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 p-3 text-xs font-black uppercase text-gray-200 hover:bg-white/10 active:scale-95 transition-all shadow-sm"
+              >
+                <span>🏀</span>
+                <span>Ball Bounce</span>
+              </button>
+            </div>
+          </div>
         </div>
       </section>
 

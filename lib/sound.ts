@@ -3,6 +3,7 @@
 class SoundManager {
   private ctx: AudioContext | null = null;
   private enabled: boolean = true;
+  private failSoundIndex: number = 0;
 
   constructor() {
     if (typeof window !== "undefined") {
@@ -13,7 +14,9 @@ class SoundManager {
 
   private initCtx() {
     if (!this.ctx && typeof window !== "undefined") {
-      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+      const AudioCtx =
+        window.AudioContext ||
+        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
       if (AudioCtx) {
         this.ctx = new AudioCtx();
       }
@@ -39,7 +42,7 @@ class SoundManager {
     return this.enabled;
   }
 
-  // 🏀 SWISH Sound: Crisp rushing air + subtle net ping
+  // 🏀 CONGRATS / SWISH SOUND: Crisp net swoosh + uplifting, sparkling triumphant chime arpeggio
   public playSwish() {
     if (!this.enabled) return;
     try {
@@ -48,8 +51,8 @@ class SoundManager {
 
       const now = this.ctx.currentTime;
 
-      // Filtered noise for the net brush
-      const bufferSize = this.ctx.sampleRate * 0.3;
+      // 1. Crisp Net Brush Swoosh (White noise with rapid bandpass downward sweep)
+      const bufferSize = Math.floor(this.ctx.sampleRate * 0.22);
       const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
       const output = buffer.getChannelData(0);
       for (let i = 0; i < bufferSize; i++) {
@@ -61,73 +64,268 @@ class SoundManager {
 
       const filter = this.ctx.createBiquadFilter();
       filter.type = "bandpass";
-      filter.frequency.setValueAtTime(1200, now);
-      filter.frequency.exponentialRampToValueAtTime(600, now + 0.25);
-      filter.Q.setValueAtTime(3, now);
+      filter.frequency.setValueAtTime(1600, now);
+      filter.frequency.exponentialRampToValueAtTime(700, now + 0.18);
+      filter.Q.setValueAtTime(4, now);
 
-      const gain = this.ctx.createGain();
-      gain.gain.setValueAtTime(0.4, now);
-      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.28);
+      const noiseGain = this.ctx.createGain();
+      noiseGain.gain.setValueAtTime(0.35, now);
+      noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
 
       whiteNoise.connect(filter);
-      filter.connect(gain);
-      gain.connect(this.ctx.destination);
-
+      filter.connect(noiseGain);
+      noiseGain.connect(this.ctx.destination);
       whiteNoise.start(now);
 
-      // Bright harmonic pop
-      const osc = this.ctx.createOscillator();
-      const oscGain = this.ctx.createGain();
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(880, now);
-      osc.frequency.exponentialRampToValueAtTime(440, now + 0.2);
+      // 2. Celebratory "Congrats / Nice Shot!" Bell Chime Arpeggio: [G5, C6, E6, G6, C7]
+      const chimeNotes = [
+        { freq: 783.99, delay: 0.03, dur: 0.25, vol: 0.25 }, // G5
+        { freq: 1046.5, delay: 0.08, dur: 0.3, vol: 0.3 },  // C6
+        { freq: 1318.51, delay: 0.14, dur: 0.35, vol: 0.35 }, // E6
+        { freq: 1567.98, delay: 0.2, dur: 0.4, vol: 0.4 },  // G6
+        { freq: 2093.0, delay: 0.27, dur: 0.55, vol: 0.45 }, // C7 (High Sparkle)
+      ];
 
-      oscGain.gain.setValueAtTime(0.3, now);
-      oscGain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+      chimeNotes.forEach(({ freq, delay, dur, vol }) => {
+        const osc = this.ctx!.createOscillator();
+        const oscGain = this.ctx!.createGain();
 
-      osc.connect(oscGain);
-      oscGain.connect(this.ctx.destination);
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(freq, now + delay);
 
-      osc.start(now);
-      osc.stop(now + 0.2);
+        // Subtle shimmer vibrato on the highest note
+        if (freq >= 2000) {
+          osc.frequency.exponentialRampToValueAtTime(freq * 1.01, now + delay + dur);
+        }
+
+        oscGain.gain.setValueAtTime(0.001, now + delay);
+        oscGain.gain.linearRampToValueAtTime(vol, now + delay + 0.015);
+        oscGain.gain.exponentialRampToValueAtTime(0.001, now + delay + dur);
+
+        osc.connect(oscGain);
+        oscGain.connect(this.ctx!.destination);
+
+        osc.start(now + delay);
+        osc.stop(now + delay + dur);
+      });
+
+      // 3. Subtle Warm Glass Harmonic Underneath
+      const padOsc = this.ctx.createOscillator();
+      const padGain = this.ctx.createGain();
+      padOsc.type = "triangle";
+      padOsc.frequency.setValueAtTime(523.25, now + 0.05); // C5 fundamental
+      padGain.gain.setValueAtTime(0.001, now + 0.05);
+      padGain.gain.linearRampToValueAtTime(0.18, now + 0.1);
+      padGain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+
+      padOsc.connect(padGain);
+      padGain.connect(this.ctx.destination);
+      padOsc.start(now + 0.05);
+      padOsc.stop(now + 0.6);
     } catch {
-      // Audio not supported or blocked by policy
+      // Audio not supported or policy blocked
     }
   }
 
-  // 🧱 BRICK Sound: Heavy metallic / backboard rim clank
+  // 🤡 HILARIOUS CARTOON FAIL SOUNDS: Very funny comical sounds for missed shots
   public playBrick() {
     if (!this.enabled) return;
     try {
       this.initCtx();
       if (!this.ctx) return;
 
-      const now = this.ctx.currentTime;
+      // Cycle through 3 hilarious cartoon fail sound styles
+      const soundType = this.failSoundIndex % 3;
+      this.failSoundIndex++;
 
-      // Heavy clank
-      const osc1 = this.ctx.createOscillator();
-      const osc2 = this.ctx.createOscillator();
+      if (soundType === 0) {
+        // 🎺 Style 1: Comedic Sad Trombone "Womp-Womp-Womp-Waaaaah"
+        this.playCartoonWompTrombone();
+      } else if (soundType === 1) {
+        // 🌀 Style 2: Goofy Spring "Boing-Boing-Twang"
+        this.playCartoonSpringBoing();
+      } else {
+        // 🦆 Style 3: Comical Slide Whistle Drop & Squeak
+        this.playCartoonSlideDrop();
+      }
+    } catch {
+      // Ignore
+    }
+  }
+
+  // 🎺 Style 1: Classic Sad Trombone Wah-Wah-Wah-Waaaaah
+  private playCartoonWompTrombone() {
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+
+    // 4 Descending notes with funny wah-wah mute: Eb4 -> D4 -> Db4 -> C4 (bending down with vibrato)
+    const notes = [
+      { f: 311.13, delay: 0.0, dur: 0.18 }, // Eb4
+      { f: 293.66, delay: 0.19, dur: 0.18 }, // D4
+      { f: 277.18, delay: 0.38, dur: 0.18 }, // Db4
+      { f: 261.63, delay: 0.57, dur: 0.65, bendTo: 233.08 }, // C4 -> Bb3 slide with heavy vibrato
+    ];
+
+    notes.forEach((note, idx) => {
+      const osc = this.ctx!.createOscillator();
+      const gain = this.ctx!.createGain();
+      const filter = this.ctx!.createBiquadFilter();
+
+      // Sawtooth + Lowpass filter for plunger mute brass trombone timbre
+      osc.type = "sawtooth";
+      osc.frequency.setValueAtTime(note.f, now + note.delay);
+
+      filter.type = "bandpass";
+      filter.Q.setValueAtTime(3.5, now + note.delay);
+
+      // Comedic "Wah" filter sweep on each note
+      filter.frequency.setValueAtTime(450, now + note.delay);
+      filter.frequency.exponentialRampToValueAtTime(1100, now + note.delay + 0.06);
+      filter.frequency.exponentialRampToValueAtTime(400, now + note.delay + note.dur);
+
+      if (note.bendTo) {
+        // Final long note: funny slide down + comedic wobbling vibrato
+        osc.frequency.exponentialRampToValueAtTime(note.bendTo, now + note.delay + note.dur);
+
+        // Add LFO for funny trembling vibrato
+        const lfo = this.ctx!.createOscillator();
+        const lfoGain = this.ctx!.createGain();
+        lfo.frequency.setValueAtTime(7, now + note.delay); // 7Hz funny wobble
+        lfoGain.gain.setValueAtTime(12, now + note.delay);
+        lfo.connect(osc.frequency);
+        lfo.start(now + note.delay + 0.1);
+        lfo.stop(now + note.delay + note.dur);
+      }
+
+      gain.gain.setValueAtTime(0.001, now + note.delay);
+      gain.gain.linearRampToValueAtTime(0.35, now + note.delay + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + note.delay + note.dur);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.ctx!.destination);
+
+      osc.start(now + note.delay);
+      osc.stop(now + note.delay + note.dur + 0.02);
+    });
+  }
+
+  // 🌀 Style 2: Goofy Cartoon Spring Boing
+  private playCartoonSpringBoing() {
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    const lfo = this.ctx.createOscillator();
+    const lfoGain = this.ctx.createGain();
+
+    osc.type = "triangle";
+    // Fast pitch rise with funny wobble
+    osc.frequency.setValueAtTime(140, now);
+    osc.frequency.exponentialRampToValueAtTime(650, now + 0.15);
+    osc.frequency.exponentialRampToValueAtTime(220, now + 0.55);
+
+    // Fast 30Hz spring FM vibration
+    lfo.frequency.setValueAtTime(28, now);
+    lfoGain.gain.setValueAtTime(45, now);
+    lfoGain.gain.exponentialRampToValueAtTime(2, now + 0.55);
+
+    lfo.connect(osc.frequency);
+
+    gain.gain.setValueAtTime(0.001, now);
+    gain.gain.linearRampToValueAtTime(0.4, now + 0.03);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    lfo.start(now);
+    osc.start(now);
+    lfo.stop(now + 0.55);
+    osc.stop(now + 0.55);
+
+    // Second smaller comical bounce
+    const osc2 = this.ctx.createOscillator();
+    const gain2 = this.ctx.createGain();
+    osc2.type = "sine";
+    osc2.frequency.setValueAtTime(320, now + 0.22);
+    osc2.frequency.exponentialRampToValueAtTime(180, now + 0.45);
+
+    gain2.gain.setValueAtTime(0.001, now + 0.22);
+    gain2.gain.linearRampToValueAtTime(0.25, now + 0.24);
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+
+    osc2.connect(gain2);
+    gain2.connect(this.ctx.destination);
+
+    osc2.start(now + 0.22);
+    osc2.stop(now + 0.45);
+  }
+
+  // 🦆 Style 3: Comical Cartoon Slide Whistle Drop & Splat
+  private playCartoonSlideDrop() {
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+
+    // Slide whistle sliding down from 1500Hz down to 180Hz
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(1400, now);
+    osc.frequency.exponentialRampToValueAtTime(180, now + 0.42);
+
+    gain.gain.setValueAtTime(0.001, now);
+    gain.gain.linearRampToValueAtTime(0.35, now + 0.03);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.42);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start(now);
+    osc.stop(now + 0.43);
+
+    // Goofy "splat / pop" at the bottom
+    const popOsc = this.ctx.createOscillator();
+    const popGain = this.ctx.createGain();
+    popOsc.type = "triangle";
+    popOsc.frequency.setValueAtTime(180, now + 0.42);
+    popOsc.frequency.exponentialRampToValueAtTime(60, now + 0.55);
+
+    popGain.gain.setValueAtTime(0.3, now + 0.42);
+    popGain.gain.exponentialRampToValueAtTime(0.001, now + 0.55);
+
+    popOsc.connect(popGain);
+    popGain.connect(this.ctx.destination);
+
+    popOsc.start(now + 0.42);
+    popOsc.stop(now + 0.55);
+  }
+
+  // 🏀 Basketball Bounce Sound: Clean natural leather ball bounce on court
+  public playBounce() {
+    if (!this.enabled) return;
+    try {
+      this.initCtx();
+      if (!this.ctx) return;
+
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
 
-      osc1.type = "square";
-      osc1.frequency.setValueAtTime(160, now);
-      osc1.frequency.exponentialRampToValueAtTime(40, now + 0.25);
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(180, now);
+      osc.frequency.exponentialRampToValueAtTime(45, now + 0.16);
 
-      osc2.type = "triangle";
-      osc2.frequency.setValueAtTime(240, now);
-      osc2.frequency.exponentialRampToValueAtTime(60, now + 0.25);
+      gain.gain.setValueAtTime(0.45, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.16);
 
-      gain.gain.setValueAtTime(0.6, now);
-      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.28);
-
-      osc1.connect(gain);
-      osc2.connect(gain);
+      osc.connect(gain);
       gain.connect(this.ctx.destination);
 
-      osc1.start(now);
-      osc2.start(now);
-      osc1.stop(now + 0.28);
-      osc2.stop(now + 0.28);
+      osc.start(now);
+      osc.stop(now + 0.16);
     } catch {
       // Ignore
     }
@@ -145,7 +343,7 @@ class SoundManager {
         { f: 523.25, d: 0.1, t: 0 },    // C5
         { f: 659.25, d: 0.1, t: 0.1 },  // E5
         { f: 783.99, d: 0.1, t: 0.2 },  // G5
-        { f: 1046.50, d: 0.35, t: 0.3 } // C6
+        { f: 1046.5, d: 0.4, t: 0.3 }, // C6
       ];
 
       notes.forEach(({ f, d, t }) => {
@@ -357,7 +555,7 @@ class SoundManager {
       this.initCtx();
       if (!this.ctx) return;
 
-      this.playBrick();
+      this.playBounce();
       setTimeout(() => this.playSwish(), 60);
       setTimeout(() => this.playWhistle(), 250);
     } catch {

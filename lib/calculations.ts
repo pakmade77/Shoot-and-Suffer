@@ -37,8 +37,8 @@ export function calculateGameResults(
   punishmentAmount: number,
   suddenDeath?: SuddenDeathInput
 ): CalculatedGamePlayer[] {
-  if (!shots || shots.length < 3 || shots.length > 7) {
-    throw new Error("Game must have between 3 and 7 players");
+  if (!shots || shots.length < 1) {
+    throw new Error("Game must have at least 1 player");
   }
 
   // Handle Sudden Death outcome if provided

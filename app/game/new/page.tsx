@@ -54,22 +54,26 @@ export default function NewGamePage() {
       if (prev.includes(id)) {
         return prev.filter((pId) => pId !== id);
       } else {
-        if (prev.length >= 7) {
-          setError("Maximum 7 players allowed per game.");
-          return prev;
-        }
         return [...prev, id];
       }
     });
   };
 
+  const handleSelectAll = () => {
+    sounds.playClick();
+    setError(null);
+    setSelectedPlayerIds(players.map((p) => p.id));
+  };
+
+  const handleClearAll = () => {
+    sounds.playClick();
+    setError(null);
+    setSelectedPlayerIds([]);
+  };
+
   const handleStartGame = () => {
-    if (selectedPlayerIds.length < 3) {
-      setError("Please select at least 3 players (minimum 3, maximum 7).");
-      return;
-    }
-    if (selectedPlayerIds.length > 7) {
-      setError("Maximum 7 players allowed per game.");
+    if (selectedPlayerIds.length < 1) {
+      setError("Please select at least 1 player to start the game.");
       return;
     }
 
@@ -126,19 +130,38 @@ export default function NewGamePage() {
               <h2 className="text-lg font-black uppercase text-white tracking-wide">
                 Select Players
               </h2>
-              <p className="text-xs text-gray-400">Choose between 3 to 7 active players</p>
+              <p className="text-xs text-gray-400">Play solo, duel 1v1, or with any squad size</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1.5 mr-1">
+              <button
+                type="button"
+                onClick={handleSelectAll}
+                className="text-[11px] font-bold text-hoop-amber hover:text-white px-2 py-0.5 rounded-lg bg-white/5 border border-white/10 transition-colors"
+              >
+                Select All ({players.length})
+              </button>
+              {selectedPlayerIds.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleClearAll}
+                  className="text-[11px] font-bold text-gray-400 hover:text-rose-300 px-2 py-0.5 rounded-lg bg-white/5 border border-white/10 transition-colors"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+
             <span
               className={`rounded-full px-3 py-1 text-xs font-black tracking-wide uppercase ${
-                selectedPlayerIds.length >= 3 && selectedPlayerIds.length <= 7
+                selectedPlayerIds.length >= 1
                   ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
                   : "bg-amber-500/20 text-amber-300 border border-amber-500/30"
               }`}
             >
-              {selectedPlayerIds.length} / 7 Players Selected
+              {selectedPlayerIds.length} {selectedPlayerIds.length === 1 ? "Player" : "Players"} Selected
             </span>
             <Link
               href="/players"
@@ -353,7 +376,7 @@ export default function NewGamePage() {
         <button
           type="button"
           onClick={handleStartGame}
-          disabled={selectedPlayerIds.length < 3 || selectedPlayerIds.length > 7}
+          disabled={selectedPlayerIds.length < 1}
           className="w-full flex items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-hoop-orange via-hoop-glow to-hoop-amber p-4 text-base sm:text-lg font-black uppercase tracking-wider text-white shadow-xl shadow-hoop-orange/30 hover:scale-[1.01] active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 transition-all"
         >
           <Shuffle className="w-5 h-5" />

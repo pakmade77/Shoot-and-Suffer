@@ -70,7 +70,7 @@ export default function PlayGamePage() {
 
     try {
       const parsed = JSON.parse(raw);
-      if (!parsed.players || parsed.players.length < 3) {
+      if (!parsed.players || parsed.players.length < 1) {
         router.replace("/game/new");
         return;
       }

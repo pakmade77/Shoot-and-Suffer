@@ -36,9 +36,9 @@ export async function POST(req: NextRequest) {
       suddenDeath?: SuddenDeathInput;
     };
 
-    if (!shots || !Array.isArray(shots) || shots.length < 3 || shots.length > 7) {
+    if (!shots || !Array.isArray(shots) || shots.length < 1) {
       return NextResponse.json(
-        { error: "Games must have between 3 and 7 players" },
+        { error: "Games must have at least 1 player" },
         { status: 400 }
       );
     }
