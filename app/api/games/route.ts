@@ -43,10 +43,11 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const validPunishments = [5, 10, 15];
-    const finalPunishment = validPunishments.includes(Number(punishmentAmount))
-      ? Number(punishmentAmount)
-      : 10;
+    const parsedPunishment = parseInt(String(punishmentAmount), 10);
+    const finalPunishment =
+      !isNaN(parsedPunishment) && parsedPunishment > 0 && parsedPunishment <= 500
+        ? parsedPunishment
+        : 10;
 
     // Validate player existence
     const playerIds = shots.map((s) => s.playerId);

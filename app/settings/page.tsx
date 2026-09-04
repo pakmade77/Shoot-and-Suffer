@@ -11,6 +11,9 @@ import {
   Check,
   Dumbbell,
   Info,
+  Sliders,
+  Plus,
+  Minus,
 } from "lucide-react";
 import { sounds } from "@/lib/sound";
 
@@ -18,6 +21,7 @@ export default function SettingsPage() {
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [animationsEnabled, setAnimationsEnabled] = useState(true);
   const [defaultPunishment, setDefaultPunishment] = useState(10);
+  const [isCustomDefault, setIsCustomDefault] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [resetSuccess, setResetSuccess] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
@@ -25,7 +29,15 @@ export default function SettingsPage() {
   useEffect(() => {
     setSoundEnabled(sounds.isEnabled());
     const storedPunishment = localStorage.getItem("shoot_suffer_default_punishment");
-    if (storedPunishment) setDefaultPunishment(Number(storedPunishment));
+    if (storedPunishment) {
+      const num = Number(storedPunishment);
+      if (!isNaN(num) && num > 0) {
+        setDefaultPunishment(num);
+        if (![5, 10, 15].includes(num)) {
+          setIsCustomDefault(true);
+        }
+      }
+    }
     const storedAnim = localStorage.getItem("shoot_suffer_animations");
     if (storedAnim !== null) setAnimationsEnabled(storedAnim === "true");
   }, []);
@@ -41,9 +53,11 @@ export default function SettingsPage() {
     localStorage.setItem("shoot_suffer_animations", String(next));
   };
 
-  const handleSetDefaultPunishment = (amount: number) => {
-    setDefaultPunishment(amount);
-    localStorage.setItem("shoot_suffer_default_punishment", String(amount));
+  const handleSetDefaultPunishment = (amount: number, isCustom = false) => {
+    const clamped = Math.max(1, Math.min(200, isNaN(amount) ? 1 : amount));
+    setDefaultPunishment(clamped);
+    setIsCustomDefault(isCustom);
+    localStorage.setItem("shoot_suffer_default_punishment", String(clamped));
     sounds.playClick();
   };
 
@@ -85,23 +99,30 @@ export default function SettingsPage() {
 
       {/* GAME DEFAULTS */}
       <section className="rounded-3xl border border-white/10 bg-surface/80 p-6 backdrop-blur-md space-y-4">
-        <h2 className="text-base font-black uppercase text-white tracking-wide flex items-center gap-2">
-          <Dumbbell className="w-5 h-5 text-hoop-orange" />
-          Default Punishment
-        </h2>
-        <p className="text-xs text-gray-400">
-          The preselected push-up punishment amount when creating a new game.
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-base font-black uppercase text-white tracking-wide flex items-center gap-2">
+              <Dumbbell className="w-5 h-5 text-hoop-orange" />
+              Default Punishment
+            </h2>
+            <p className="text-xs text-gray-400 mt-0.5">
+              The preselected push-up punishment amount when creating a new game.
+            </p>
+          </div>
+          <span className="rounded-full px-3 py-1 text-xs font-black tracking-wide uppercase bg-hoop-orange/20 text-hoop-orange border border-hoop-orange/30">
+            {defaultPunishment} Push-ups
+          </span>
+        </div>
 
-        <div className="grid grid-cols-3 gap-3 pt-1">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-1">
           {[5, 10, 15].map((amount) => {
-            const isSelected = defaultPunishment === amount;
+            const isSelected = !isCustomDefault && defaultPunishment === amount;
             return (
               <button
                 key={amount}
                 type="button"
-                onClick={() => handleSetDefaultPunishment(amount)}
-                className={`rounded-2xl p-4 text-center font-black uppercase transition-all ${
+                onClick={() => handleSetDefaultPunishment(amount, false)}
+                className={`rounded-2xl p-3.5 text-center font-black uppercase transition-all ${
                   isSelected
                     ? "border-2 border-hoop-orange bg-hoop-orange/20 text-white shadow-lg shadow-hoop-orange/20"
                     : "border border-white/10 bg-white/[0.03] text-gray-400 hover:bg-white/[0.08] hover:text-white"
@@ -112,7 +133,92 @@ export default function SettingsPage() {
               </button>
             );
           })}
+
+          <button
+            type="button"
+            onClick={() => handleSetDefaultPunishment(isCustomDefault ? defaultPunishment : 20, true)}
+            className={`rounded-2xl p-3.5 text-center font-black uppercase transition-all ${
+              isCustomDefault
+                ? "border-2 border-hoop-orange bg-hoop-orange/20 text-white shadow-lg shadow-hoop-orange/20"
+                : "border border-white/10 bg-white/[0.03] text-gray-400 hover:bg-white/[0.08] hover:text-white"
+            }`}
+          >
+            <span className="text-lg">{isCustomDefault ? defaultPunishment : "Custom"}</span>
+            <span className="block text-[10px] text-gray-400 mt-0.5">
+              {isCustomDefault ? "Push-ups" : "Set Custom"}
+            </span>
+          </button>
         </div>
+
+        {isCustomDefault && (
+          <div className="rounded-2xl border border-hoop-orange/30 bg-hoop-orange/10 p-4 space-y-3 mt-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-black uppercase text-hoop-orange flex items-center gap-1.5">
+                <Sliders className="w-3.5 h-3.5" />
+                Custom Default Push-ups
+              </span>
+              <span className="text-[11px] text-gray-300">Min 1 • Max 200</span>
+            </div>
+
+            <div className="flex items-center justify-center gap-2">
+              <button
+                type="button"
+                onClick={() => handleSetDefaultPunishment(defaultPunishment - 5, true)}
+                className="h-10 px-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-xs font-black text-gray-200 active:scale-95 transition-all"
+              >
+                -5
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSetDefaultPunishment(defaultPunishment - 1, true)}
+                className="h-10 w-10 flex items-center justify-center rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-gray-200 active:scale-95 transition-all"
+              >
+                <Minus className="w-4 h-4" />
+              </button>
+
+              <input
+                type="number"
+                min={1}
+                max={200}
+                value={defaultPunishment}
+                onChange={(e) => handleSetDefaultPunishment(parseInt(e.target.value, 10), true)}
+                className="h-11 w-24 text-center text-xl font-black text-white bg-black/50 border-2 border-hoop-orange/60 rounded-xl focus:border-hoop-orange focus:outline-none"
+              />
+
+              <button
+                type="button"
+                onClick={() => handleSetDefaultPunishment(defaultPunishment + 1, true)}
+                className="h-10 w-10 flex items-center justify-center rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-gray-200 active:scale-95 transition-all"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => handleSetDefaultPunishment(defaultPunishment + 5, true)}
+                className="h-10 px-3 rounded-xl border border-white/10 bg-white/5 hover:bg-white/10 text-xs font-black text-gray-200 active:scale-95 transition-all"
+              >
+                +5
+              </button>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+              {[20, 25, 30, 50, 100].map((preset) => (
+                <button
+                  key={preset}
+                  type="button"
+                  onClick={() => handleSetDefaultPunishment(preset, true)}
+                  className={`px-3 py-1 rounded-xl text-xs font-black uppercase transition-all ${
+                    defaultPunishment === preset
+                      ? "bg-hoop-orange text-white shadow-md shadow-hoop-orange/30"
+                      : "border border-white/10 bg-white/5 text-gray-300 hover:bg-white/10"
+                  }`}
+                >
+                  {preset}x
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
       </section>
 
       {/* AUDIO & VISUAL TOGGLES */}
