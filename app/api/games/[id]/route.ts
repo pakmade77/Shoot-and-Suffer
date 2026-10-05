@@ -102,7 +102,7 @@ export async function PUT(
             isWinner: res.isWinner,
             isLoser: res.isLoser,
             pushupAmount: res.pushupAmount,
-            pushupsCompleted: res.isLoser,
+            pushupsCompleted: false,
           },
         });
       }

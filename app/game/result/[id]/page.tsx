@@ -127,6 +127,7 @@ export default function GameResultPage({
       JSON.stringify({
         players: shuffledPlayers,
         punishmentAmount: game.punishmentAmount,
+        shootingMode: "round_by_round",
       })
     );
     router.push("/game/play");

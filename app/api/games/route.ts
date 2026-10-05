@@ -94,7 +94,7 @@ export async function POST(req: NextRequest) {
           isWinner: p.isWinner,
           isLoser: p.isLoser,
           pushupAmount: p.pushupAmount,
-          pushupsCompleted: p.isLoser,
+          pushupsCompleted: false,
         })),
       });
 

@@ -100,15 +100,23 @@ export default function PlayGamePage() {
     );
   }
 
-  // Active shooter based on mode
-  const activeIndex = isSuddenDeath
+  // Active shooter based on mode with safe clamping
+  const rawActiveIndex = isSuddenDeath
     ? suddenDeathPlayerIndex
     : shootingMode === "round_by_round"
     ? roundPlayerIndex
     : playerIndex;
 
-  const currentPlayer = players[activeIndex];
-  const currentShots = playerShots[activeIndex];
+  const activeIndex = Math.max(0, Math.min(rawActiveIndex, Math.max(0, players.length - 1)));
+  const currentPlayer = players[activeIndex] || players[0];
+  const currentShots =
+    playerShots[activeIndex] ||
+    playerShots[0] || {
+      playerId: currentPlayer?.id || "",
+      shot1: null,
+      shot2: null,
+      shot3: null,
+    };
 
   // Shot value for active turn in Round-by-Round mode
   const activeRoundShotKey = `shot${currentRound}` as "shot1" | "shot2" | "shot3";
@@ -121,7 +129,7 @@ export default function PlayGamePage() {
 
   // Announce turn changes
   useEffect(() => {
-    if (currentPlayer) {
+    if (currentPlayer?.name) {
       if (isSuddenDeath) {
         sounds.voiceAnnounce(`Sudden Death round ${suddenDeathRound}! ${currentPlayer.name}, make this shot!`);
       } else if (shootingMode === "round_by_round") {
@@ -130,7 +138,7 @@ export default function PlayGamePage() {
         sounds.announceTurn(currentPlayer.name);
       }
     }
-  }, [activeIndex, currentRound, isSuddenDeath, suddenDeathRound]);
+  }, [activeIndex, currentRound, isSuddenDeath, suddenDeathRound, currentPlayer?.name]);
 
   const handleShotChange = (shotKey: "shot1" | "shot2" | "shot3", value: boolean) => {
     setError(null);
@@ -141,6 +149,14 @@ export default function PlayGamePage() {
     }
     setPlayerShots((prev) => {
       const copy = [...prev];
+      if (!copy[activeIndex]) {
+        copy[activeIndex] = {
+          playerId: players[activeIndex]?.id || "",
+          shot1: null,
+          shot2: null,
+          shot3: null,
+        };
+      }
       copy[activeIndex] = {
         ...copy[activeIndex],
         [shotKey]: value,
@@ -150,7 +166,7 @@ export default function PlayGamePage() {
   };
 
   const handleSuddenDeathShotChange = (value: boolean) => {
-    if (!currentPlayer) return;
+    if (!currentPlayer?.id) return;
     setError(null);
     setSuddenDeathAlertMessage(null);
     if (value) {
@@ -334,8 +350,8 @@ export default function PlayGamePage() {
     setSubmitting(true);
     setError(null);
     try {
-      const formattedShots = playerShots.map((ps) => ({
-        playerId: ps.playerId,
+      const formattedShots = playerShots.map((ps, idx) => ({
+        playerId: ps.playerId || players[idx]?.id,
         shot1: Boolean(ps.shot1),
         shot2: Boolean(ps.shot2),
         shot3: Boolean(ps.shot3),
