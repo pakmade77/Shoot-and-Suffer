@@ -18,6 +18,8 @@ import {
 } from "lucide-react";
 import { sounds } from "@/lib/sound";
 import { THEME_OPTIONS, ThemeId, applyTheme, getStoredTheme } from "@/lib/theme";
+import { AdminPinModal } from "@/components/game/AdminPinModal";
+import { isSessionAdminVerified, getClientAdminPin } from "@/lib/auth";
 
 export default function SettingsPage() {
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -28,6 +30,11 @@ export default function SettingsPage() {
   const [resetSuccess, setResetSuccess] = useState(false);
   const [voiceEnabled, setVoiceEnabled] = useState(true);
   const [activeTheme, setActiveTheme] = useState<ThemeId>("streetball");
+
+  // Admin PIN Protection for Reset
+  const [isPinModalOpen, setIsPinModalOpen] = useState(false);
+  const [pendingResetType, setPendingResetType] = useState<"history_only" | "full_seed" | null>(null);
+  const [verifiedAdminPin, setVerifiedAdminPin] = useState<string>("");
 
   useEffect(() => {
     setSoundEnabled(sounds.isEnabled());
@@ -84,10 +91,38 @@ export default function SettingsPage() {
   const [resetModalType, setResetModalType] = useState<"history_only" | "full_seed" | null>(null);
   const [resetMessage, setResetMessage] = useState("");
 
+  const handleTriggerReset = (type: "history_only" | "full_seed") => {
+    sounds.playClick();
+    if (isSessionAdminVerified()) {
+      setVerifiedAdminPin(getClientAdminPin());
+      setResetModalType(type);
+    } else {
+      setPendingResetType(type);
+      setIsPinModalOpen(true);
+    }
+  };
+
+  const handlePinSuccess = (pin: string) => {
+    setVerifiedAdminPin(pin);
+    setIsPinModalOpen(false);
+    if (pendingResetType) {
+      setResetModalType(pendingResetType);
+      setPendingResetType(null);
+    }
+  };
+
   const handleResetHistoryOnly = async () => {
     try {
       setResetting(true);
-      const res = await fetch("/api/reset-history", { method: "POST" });
+      const pinToSend = verifiedAdminPin || getClientAdminPin();
+      const res = await fetch("/api/reset-history", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-pin": pinToSend,
+        },
+        body: JSON.stringify({ adminPin: pinToSend }),
+      });
       if (res.ok) {
         const data = await res.json();
         sounds.playVictory();
@@ -95,6 +130,10 @@ export default function SettingsPage() {
         setResetSuccess(true);
         setResetModalType(null);
         setTimeout(() => setResetSuccess(false), 5000);
+      } else {
+        const data = await res.json();
+        sounds.playBrick();
+        alert(data.error || "Gagal melakukan reset.");
       }
     } catch (err) {
       console.error("Reset history error", err);
@@ -106,13 +145,25 @@ export default function SettingsPage() {
   const handleResetDatabase = async () => {
     try {
       setResetting(true);
-      const res = await fetch("/api/seed", { method: "POST" });
+      const pinToSend = verifiedAdminPin || getClientAdminPin();
+      const res = await fetch("/api/seed", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-pin": pinToSend,
+        },
+        body: JSON.stringify({ adminPin: pinToSend }),
+      });
       if (res.ok) {
         sounds.playVictory();
         setResetMessage("Database reset and seeded successfully! Players preserved.");
         setResetSuccess(true);
         setResetModalType(null);
         setTimeout(() => setResetSuccess(false), 5000);
+      } else {
+        const data = await res.json();
+        sounds.playBrick();
+        alert(data.error || "Gagal melakukan reset.");
       }
     } catch (err) {
       console.error("Reset error", err);
@@ -560,7 +611,7 @@ export default function SettingsPage() {
         <div className="flex flex-wrap gap-3 pt-1">
           <button
             type="button"
-            onClick={() => setResetModalType("history_only")}
+            onClick={() => handleTriggerReset("history_only")}
             className="inline-flex items-center gap-2 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-5 py-3 text-xs font-black uppercase tracking-wider text-amber-300 hover:bg-amber-500/20 active:scale-95 transition-all shadow-md"
           >
             <RotateCcw className="w-4 h-4" />
@@ -569,7 +620,7 @@ export default function SettingsPage() {
 
           <button
             type="button"
-            onClick={() => setResetModalType("full_seed")}
+            onClick={() => handleTriggerReset("full_seed")}
             className="inline-flex items-center gap-2 rounded-2xl border border-rose-500/30 bg-rose-500/10 px-5 py-3 text-xs font-black uppercase tracking-wider text-rose-300 hover:bg-rose-500/20 active:scale-95 transition-all shadow-md"
           >
             <RotateCcw className="w-4 h-4" />
@@ -617,6 +668,18 @@ export default function SettingsPage() {
           </div>
         </div>
       )}
+
+      {/* ADMIN PIN VERIFICATION MODAL FOR RESET */}
+      <AdminPinModal
+        isOpen={isPinModalOpen}
+        title="Admin PIN Reset Authorization"
+        description="Masukkan 4-digit Admin PIN sebelum melakukan operasi reset database (Default: 8888)."
+        onSuccess={handlePinSuccess}
+        onClose={() => {
+          setIsPinModalOpen(false);
+          setPendingResetType(null);
+        }}
+      />
     </div>
   );
 }
