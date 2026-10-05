@@ -18,6 +18,7 @@ import {
 import { PlayerAvatar } from "@/components/ui/PlayerAvatar";
 import { PlayerShuffleModal } from "@/components/game/PlayerShuffleModal";
 import { sounds } from "@/lib/sound";
+import { saveGameSetup } from "@/lib/gameSession";
 import Link from "next/link";
 
 interface Player {
@@ -132,18 +133,11 @@ export default function NewGamePage() {
   };
 
   const handleConfirmShuffledGame = (shuffledPlayers: Player[]) => {
-    try {
-      sessionStorage.setItem(
-        "current_game_setup",
-        JSON.stringify({
-          players: shuffledPlayers,
-          punishmentAmount,
-          shootingMode,
-        })
-      );
-    } catch (e) {
-      console.error("Failed to save game setup to sessionStorage", e);
-    }
+    saveGameSetup({
+      players: shuffledPlayers,
+      punishmentAmount,
+      shootingMode,
+    });
 
     router.push("/game/play");
   };

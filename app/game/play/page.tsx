@@ -21,12 +21,13 @@ import {
 import { ShotButton } from "@/components/game/ShotButton";
 import { PlayerAvatar } from "@/components/ui/PlayerAvatar";
 import { sounds } from "@/lib/sound";
+import { getGameSetup, clearGameSetup } from "@/lib/gameSession";
 
 interface PlayerSetup {
   id: string;
   name: string;
-  nickname: string | null;
-  avatar: string | null;
+  nickname?: string | null;
+  avatar?: string | null;
 }
 
 interface PlayerShotState {
@@ -62,34 +63,25 @@ export default function PlayGamePage() {
   const [suddenDeathAlertMessage, setSuddenDeathAlertMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    const raw = sessionStorage.getItem("current_game_setup");
-    if (!raw) {
+    const setup = getGameSetup();
+    if (!setup || !setup.players || !Array.isArray(setup.players) || setup.players.length < 1) {
       router.replace("/game/new");
       return;
     }
 
-    try {
-      const parsed = JSON.parse(raw);
-      if (!parsed.players || parsed.players.length < 1) {
-        router.replace("/game/new");
-        return;
-      }
-      setPlayers(parsed.players);
-      setPunishmentAmount(parsed.punishmentAmount || 10);
-      if (parsed.shootingMode === "consecutive" || parsed.shootingMode === "round_by_round") {
-        setShootingMode(parsed.shootingMode);
-      }
-      setPlayerShots(
-        parsed.players.map((p: PlayerSetup) => ({
-          playerId: p.id,
-          shot1: null,
-          shot2: null,
-          shot3: null,
-        }))
-      );
-    } catch {
-      router.replace("/game/new");
+    setPlayers(setup.players);
+    setPunishmentAmount(setup.punishmentAmount || 10);
+    if (setup.shootingMode === "consecutive" || setup.shootingMode === "round_by_round") {
+      setShootingMode(setup.shootingMode);
     }
+    setPlayerShots(
+      setup.players.map((p: PlayerSetup) => ({
+        playerId: p.id,
+        shot1: null,
+        shot2: null,
+        shot3: null,
+      }))
+    );
   }, [router]);
 
   if (players.length === 0 || playerShots.length === 0) {
@@ -195,6 +187,7 @@ export default function PlayGamePage() {
 
   // Total completed shots in whole regular game
   const totalCompletedShots = playerShots.reduce((acc, p) => {
+    if (!p) return acc;
     return (
       acc +
       (p.shot1 !== null ? 1 : 0) +
@@ -207,6 +200,7 @@ export default function PlayGamePage() {
   // Check if all regular shots resulted in 0-0 tie across all players
   const checkCompletionOrSuddenDeath = async () => {
     const maxScore = playerShots.reduce((max, ps) => {
+      if (!ps) return max;
       const score = (ps.shot1 ? 1 : 0) + (ps.shot2 ? 1 : 0) + (ps.shot3 ? 1 : 0);
       return Math.max(max, score);
     }, 0);
@@ -373,8 +367,12 @@ export default function PlayGamePage() {
       }
 
       const created = await res.json();
-      sounds.playVictory();
-      sessionStorage.removeItem("current_game_setup");
+      try {
+        sounds.playVictory();
+      } catch {
+        // Ignore
+      }
+      clearGameSetup();
       router.push(`/game/result/${created.id}`);
     } catch (err: unknown) {
       console.error(err);
@@ -525,7 +523,7 @@ export default function PlayGamePage() {
             {[1, 2, 3].map((rNum) => {
               const isActive = currentRound === rNum;
               const completedInRound = playerShots.filter(
-                (ps) => ps[`shot${rNum as 1 | 2 | 3}`] !== null
+                (ps) => ps && ps[`shot${rNum as 1 | 2 | 3}`] !== null
               ).length;
               const isRoundAllDone = completedInRound === players.length;
 
@@ -624,10 +622,11 @@ export default function PlayGamePage() {
             }
           } else {
             const ps = playerShots[idx];
-            const doneShotsCount =
-              (ps.shot1 !== null ? 1 : 0) +
-              (ps.shot2 !== null ? 1 : 0) +
-              (ps.shot3 !== null ? 1 : 0);
+            const doneShotsCount = ps
+              ? (ps.shot1 !== null ? 1 : 0) +
+                (ps.shot2 !== null ? 1 : 0) +
+                (ps.shot3 !== null ? 1 : 0)
+              : 0;
 
             if (isCurrent) {
               dotColorClass = "bg-hoop-orange ring-2 ring-hoop-orange/50 h-3";
@@ -675,7 +674,7 @@ export default function PlayGamePage() {
       {/* ACTIVE SHOOTER HERO CARD */}
       <AnimatePresence mode="wait">
         <motion.div
-          key={`${currentPlayer.id}-${isSuddenDeath ? `sd-${suddenDeathRound}` : shootingMode === "round_by_round" ? currentRound : "all"}`}
+          key={`${currentPlayer?.id || activeIndex}-${isSuddenDeath ? `sd-${suddenDeathRound}` : shootingMode === "round_by_round" ? currentRound : "all"}`}
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -10 }}
@@ -712,8 +711,8 @@ export default function PlayGamePage() {
 
           <div className="mx-auto flex justify-center mb-3 mt-4">
             <PlayerAvatar
-              avatar={currentPlayer.avatar}
-              name={currentPlayer.name}
+              avatar={currentPlayer?.avatar}
+              name={currentPlayer?.name || "Shooter"}
               size="xl"
               ring
               className={isSuddenDeath ? "ring-hoop-orange" : ""}
@@ -721,9 +720,9 @@ export default function PlayGamePage() {
           </div>
 
           <h2 className="text-2xl sm:text-3xl font-black uppercase tracking-tight text-white">
-            {currentPlayer.name}
+            {currentPlayer?.name || "Shooter"}
           </h2>
-          {currentPlayer.nickname && (
+          {currentPlayer?.nickname && (
             <p className="text-xs font-semibold text-hoop-amber tracking-wide mt-0.5">
               &quot;{currentPlayer.nickname}&quot;
             </p>
@@ -841,19 +840,19 @@ export default function PlayGamePage() {
             <div className="mt-6 space-y-3">
               <ShotButton
                 shotNumber={1}
-                value={currentShots.shot1}
+                value={currentShots?.shot1 ?? null}
                 onChange={(val) => handleShotChange("shot1", val)}
                 disabled={submitting}
               />
               <ShotButton
                 shotNumber={2}
-                value={currentShots.shot2}
+                value={currentShots?.shot2 ?? null}
                 onChange={(val) => handleShotChange("shot2", val)}
                 disabled={submitting}
               />
               <ShotButton
                 shotNumber={3}
-                value={currentShots.shot3}
+                value={currentShots?.shot3 ?? null}
                 onChange={(val) => handleShotChange("shot3", val)}
                 disabled={submitting}
               />
@@ -1031,7 +1030,7 @@ export default function PlayGamePage() {
                     <>
                       {/* 3 Shot Indicators */}
                       <div className="flex items-center gap-1">
-                        {[ps.shot1, ps.shot2, ps.shot3].map((val, sIdx) => (
+                        {[ps?.shot1, ps?.shot2, ps?.shot3].map((val, sIdx) => (
                           <span
                             key={sIdx}
                             className={`h-3 w-3 rounded-full flex items-center justify-center text-[8px] font-bold ${
