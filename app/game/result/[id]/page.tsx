@@ -23,6 +23,7 @@ import { PushupProofModal } from "@/components/game/PushupProofModal";
 import { sounds } from "@/lib/sound";
 import { formatDate } from "@/lib/utils";
 import { isSessionAdminVerified, getClientAdminPin } from "@/lib/auth";
+import { saveGameSetup } from "@/lib/gameSession";
 import { Camera } from "lucide-react";
 
 interface GameDetail {
@@ -120,16 +121,13 @@ export default function GameResultPage({
     setIsShuffleModalOpen(true);
   };
 
-  const handleConfirmRematch = (shuffledPlayers: Array<{ id: string; name: string; nickname: string | null; avatar: string | null }>) => {
+  const handleConfirmRematch = (shuffledPlayers: Array<{ id: string; name: string; nickname?: string | null; avatar?: string | null }>) => {
     if (!game) return;
-    sessionStorage.setItem(
-      "current_game_setup",
-      JSON.stringify({
-        players: shuffledPlayers,
-        punishmentAmount: game.punishmentAmount,
-        shootingMode: "round_by_round",
-      })
-    );
+    saveGameSetup({
+      players: shuffledPlayers,
+      punishmentAmount: game.punishmentAmount,
+      shootingMode: "round_by_round",
+    });
     router.push("/game/play");
   };
 
