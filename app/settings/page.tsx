@@ -554,7 +554,7 @@ export default function SettingsPage() {
           Data &amp; Reset Management
         </h2>
         <p className="text-xs text-gray-400">
-          Reset matches, debts, and history while keeping your registered players safe in Supabase, or re-seed the full initial roster.
+          Reset matches and history while keeping your registered players safe in Supabase, or re-seed the full initial roster.
         </p>
 
         <div className="flex flex-wrap gap-3 pt-1">
@@ -594,7 +594,7 @@ export default function SettingsPage() {
             </h3>
             <p className="text-xs text-gray-300 leading-relaxed">
               {resetModalType === "history_only"
-                ? "This will delete all match scores, shots, and push-up debt records. All registered players and custom avatars in Supabase will be 100% PRESERVED."
+                ? "This will delete all match scores and shot records. All registered players and custom avatars in Supabase will be 100% PRESERVED."
                 : "This will wipe match history and ensure the standard 9 office players are configured."}
             </p>
             <div className="grid grid-cols-2 gap-3 pt-2">
