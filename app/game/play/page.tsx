@@ -115,14 +115,6 @@ export default function PlayGamePage() {
     initSession();
   }, [router]);
 
-  if (players.length === 0 || playerShots.length === 0) {
-    return (
-      <div className="flex h-64 items-center justify-center text-gray-400">
-        Loading game session...
-      </div>
-    );
-  }
-
   // Active shooter based on mode with safe clamping
   const rawActiveIndex = isSuddenDeath
     ? suddenDeathPlayerIndex
@@ -150,7 +142,7 @@ export default function PlayGamePage() {
     ? suddenDeathShots[currentPlayer.id] ?? null
     : null;
 
-  // Announce turn changes
+  // Announce turn changes (hook must run on every render, before any early return)
   useEffect(() => {
     if (currentPlayer?.name) {
       if (isSuddenDeath) {
@@ -162,6 +154,14 @@ export default function PlayGamePage() {
       }
     }
   }, [activeIndex, currentRound, isSuddenDeath, suddenDeathRound, currentPlayer?.name]);
+
+  if (players.length === 0 || playerShots.length === 0) {
+    return (
+      <div className="flex h-64 items-center justify-center text-gray-400">
+        Loading game session...
+      </div>
+    );
+  }
 
   const handleShotChange = (shotKey: "shot1" | "shot2" | "shot3", value: boolean) => {
     setError(null);
