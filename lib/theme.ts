@@ -1,6 +1,6 @@
 "use client";
 
-export type ThemeId = "streetball" | "cyberpunk" | "gold" | "emerald" | "miami";
+export type ThemeId = "streetball" | "light" | "cyberpunk" | "gold" | "emerald" | "miami";
 
 export interface ThemeOption {
   id: ThemeId;
@@ -19,6 +19,14 @@ export const THEME_OPTIONS: ThemeOption[] = [
     icon: "🏀",
     previewColors: ["#ff5500", "#f59e0b", "#090d16"],
     description: "The classic high-energy streetball court with blazing orange neon.",
+  },
+  {
+    id: "light",
+    name: "Daylight Arena (Light)",
+    subtitle: "Clean White & High-Energy Orange",
+    icon: "☀️",
+    previewColors: ["#ea580c", "#f59e0b", "#ffffff"],
+    description: "Bright daytime arena aesthetic with crisp contrast, clean courts, and vibrant orange accents.",
   },
   {
     id: "cyberpunk",

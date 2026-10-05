@@ -63,25 +63,56 @@ export default function PlayGamePage() {
   const [suddenDeathAlertMessage, setSuddenDeathAlertMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    const setup = getGameSetup();
-    if (!setup || !setup.players || !Array.isArray(setup.players) || setup.players.length < 1) {
+    async function initSession() {
+      const setup = getGameSetup();
+      if (setup && setup.players && Array.isArray(setup.players) && setup.players.length > 0) {
+        setPlayers(setup.players);
+        setPunishmentAmount(setup.punishmentAmount || 10);
+        if (setup.shootingMode === "consecutive" || setup.shootingMode === "round_by_round") {
+          setShootingMode(setup.shootingMode);
+        }
+        setPlayerShots(
+          setup.players.map((p: PlayerSetup) => ({
+            playerId: p.id,
+            shot1: null,
+            shot2: null,
+            shot3: null,
+          }))
+        );
+        return;
+      }
+
+      // Fallback: If page was directly refreshed or opened, load active players from API
+      try {
+        const res = await fetch("/api/players");
+        if (res.ok) {
+          const data = await res.json();
+          const active = (Array.isArray(data) ? data : []).filter(
+            (p: PlayerSetup & { active?: boolean }) => p.active !== false
+          );
+          if (active.length > 0) {
+            setPlayers(active);
+            setPunishmentAmount(10);
+            setShootingMode("round_by_round");
+            setPlayerShots(
+              active.map((p: PlayerSetup) => ({
+                playerId: p.id,
+                shot1: null,
+                shot2: null,
+                shot3: null,
+              }))
+            );
+            return;
+          }
+        }
+      } catch (err) {
+        console.warn("Failed to auto-load active players", err);
+      }
+
       router.replace("/game/new");
-      return;
     }
 
-    setPlayers(setup.players);
-    setPunishmentAmount(setup.punishmentAmount || 10);
-    if (setup.shootingMode === "consecutive" || setup.shootingMode === "round_by_round") {
-      setShootingMode(setup.shootingMode);
-    }
-    setPlayerShots(
-      setup.players.map((p: PlayerSetup) => ({
-        playerId: p.id,
-        shot1: null,
-        shot2: null,
-        shot3: null,
-      }))
-    );
+    initSession();
   }, [router]);
 
   if (players.length === 0 || playerShots.length === 0) {

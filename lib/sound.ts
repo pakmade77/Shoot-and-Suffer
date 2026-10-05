@@ -123,35 +123,55 @@ class SoundManager {
 
   // 🎙️ Voice Callouts
   public announceTurn(playerName: string, round?: number) {
-    if (round) {
-      this.voiceAnnounce(`Round ${round}! Up next: ${playerName}!`);
-    } else {
-      this.voiceAnnounce(`Next shooter: ${playerName}! Let's see it!`);
+    try {
+      if (round) {
+        this.voiceAnnounce(`Round ${round}! Up next: ${playerName}!`);
+      } else {
+        this.voiceAnnounce(`Next shooter: ${playerName}! Let's see it!`);
+      }
+    } catch {
+      // Ignore
     }
   }
 
   public announceHit() {
-    this.haptic("success");
-    const phrases = ["Swish!", "Splash!", "Nothing but net!", "Bucket!", "Pure silk!", "That's cash!"];
-    const phrase = phrases[Math.floor(Math.random() * phrases.length)];
-    this.voiceAnnounce(phrase, { rate: 1.25, pitch: 1.1 });
+    try {
+      this.haptic("success");
+      const phrases = ["Swish!", "Splash!", "Nothing but net!", "Bucket!", "Pure silk!", "That's cash!"];
+      const phrase = phrases[Math.floor(Math.random() * phrases.length)];
+      this.voiceAnnounce(phrase, { rate: 1.25, pitch: 1.1 });
+    } catch {
+      // Ignore
+    }
   }
 
   public announceMiss() {
-    this.haptic("error");
-    const phrases = ["Airball!", "Brick!", "Clank!", "Off the iron!", "No good!", "Ouch, that hurts!"];
-    const phrase = phrases[Math.floor(Math.random() * phrases.length)];
-    this.voiceAnnounce(phrase, { rate: 1.2, pitch: 0.95 });
+    try {
+      this.haptic("error");
+      const phrases = ["Airball!", "Brick!", "Clank!", "Off the iron!", "No good!", "Ouch, that hurts!"];
+      const phrase = phrases[Math.floor(Math.random() * phrases.length)];
+      this.voiceAnnounce(phrase, { rate: 1.2, pitch: 0.95 });
+    } catch {
+      // Ignore
+    }
   }
 
   public announceSuddenDeath() {
-    this.haptic("warning");
-    this.voiceAnnounce("Sudden death! All or nothing! One shot to survive!");
+    try {
+      this.haptic("warning");
+      this.voiceAnnounce("Sudden death! All or nothing! One shot to survive!");
+    } catch {
+      // Ignore
+    }
   }
 
   public announceVictory(winnerName: string, loserName: string) {
-    this.haptic("success");
-    this.voiceAnnounce(`Game over! ${winnerName} takes the crown! ${loserName} pays the push-up tax!`);
+    try {
+      this.haptic("success");
+      this.voiceAnnounce(`Game over! ${winnerName} takes the crown! ${loserName} pays the push-up tax!`);
+    } catch {
+      // Ignore
+    }
   }
 
   // 🏀 CONGRATS / SWISH SOUND: Crisp net swoosh + uplifting, sparkling triumphant chime arpeggio

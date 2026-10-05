@@ -18,7 +18,22 @@
   --court-glow: 255, 85, 0;
 }
 
-/* ⚡ THEME 2: NEON CYBERPUNK */
+/* ☀️ THEME 2: DAYLIGHT ARENA (LIGHT THEME) */
+[data-theme="light"] {
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --surface: #ffffff;
+  --surface-light: #f1f5f9;
+  --surface-hover: #e2e8f0;
+  --hoop-orange: #ea580c;
+  --hoop-glow: #f97316;
+  --hoop-amber: #d97706;
+  --hoop-yellow: #f59e0b;
+  --champion-gold: #d97706;
+  --court-glow: 234, 88, 12;
+}
+
+/* ⚡ THEME 3: NEON CYBERPUNK */
 [data-theme="cyberpunk"] {
   --background: #060814;
   --foreground: #f0fdf4;
@@ -130,4 +145,85 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--hoop-orange);
+}
+
+/* ☀️ LIGHT MODE SPECIFIC UI OVERRIDES */
+[data-theme="light"] body {
+  color: #0f172a;
+}
+
+[data-theme="light"] .text-white {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .text-gray-200,
+[data-theme="light"] .text-gray-300 {
+  color: #334155 !important;
+}
+
+[data-theme="light"] .text-gray-400 {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .text-gray-500 {
+  color: #94a3b8 !important;
+}
+
+[data-theme="light"] .border-white\/5,
+[data-theme="light"] .border-white\/10,
+[data-theme="light"] .border-white\/15,
+[data-theme="light"] .border-white\/20 {
+  border-color: rgba(15, 23, 42, 0.08) !important;
+}
+
+[data-theme="light"] .bg-white\/\[0\.02\],
+[data-theme="light"] .bg-white\/\[0\.03\],
+[data-theme="light"] .bg-white\/\[0\.04\],
+[data-theme="light"] .bg-white\/\[0\.05\],
+[data-theme="light"] .bg-white\/5 {
+  background-color: rgba(15, 23, 42, 0.03) !important;
+}
+
+[data-theme="light"] .bg-white\/10,
+[data-theme="light"] .bg-white\/15 {
+  background-color: rgba(15, 23, 42, 0.06) !important;
+}
+
+[data-theme="light"] .bg-white\/20 {
+  background-color: rgba(15, 23, 42, 0.1) !important;
+}
+
+[data-theme="light"] .bg-black\/50,
+[data-theme="light"] .bg-black\/60,
+[data-theme="light"] .bg-black\/75,
+[data-theme="light"] .bg-black\/80 {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .glass-card {
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
+}
+
+/* Maintain crisp white text on colored CTA buttons, badges, and active elements */
+[data-theme="light"] .bg-hoop-orange,
+[data-theme="light"] .bg-victim-red,
+[data-theme="light"] .bg-emerald-500,
+[data-theme="light"] [class*="bg-gradient-to-r from-hoop-orange"],
+[data-theme="light"] [class*="from-hoop-orange"] {
+  color: #ffffff !important;
+}
+
+[data-theme="light"] .bg-hoop-orange *,
+[data-theme="light"] .bg-victim-red *,
+[data-theme="light"] .bg-emerald-500 *,
+[data-theme="light"] [class*="bg-gradient-to-r from-hoop-orange"] *,
+[data-theme="light"] [class*="from-hoop-orange"] * {
+  color: #ffffff !important;
+}
+
+[data-theme="light"] .bg-champion-gold * {
+  color: #0f172a !important;
 }
