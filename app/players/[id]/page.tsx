@@ -17,6 +17,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { PlayerAvatar } from "@/components/ui/PlayerAvatar";
+import { HoloPlayerCard } from "@/components/ui/HoloPlayerCard";
 import { formatDate } from "@/lib/utils";
 import { Achievement, PlayerStats } from "@/lib/calculations";
 
@@ -99,57 +100,71 @@ export default function PlayerDetailPage({
   return (
     <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-300">
       {/* TOP BACK BAR */}
-      <div>
+      <div className="flex items-center justify-between">
         <Link
           href="/players"
           className="inline-flex items-center gap-1.5 text-xs font-bold text-gray-400 hover:text-white uppercase tracking-wide transition-colors"
         >
           <ChevronLeft className="w-4 h-4" /> Back to Roster
         </Link>
+        <span className="text-[11px] font-bold text-hoop-amber uppercase tracking-wider bg-hoop-orange/10 border border-hoop-orange/20 px-3 py-1 rounded-full">
+          ✨ 3D Holographic Card Active
+        </span>
       </div>
 
-      {/* PLAYER HERO CARD */}
-      <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-surface via-surface-light to-surface p-6 sm:p-8 shadow-2xl">
-        <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 text-center sm:text-left">
-          <PlayerAvatar
-            avatar={stats.avatar}
-            name={stats.name}
-            size="2xl"
-            ring
-            className="shadow-2xl"
-          />
+      {/* PLAYER HERO SHOWCASE WITH 3D HOLO CARD */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+        {/* 3D HOLO CARD PREVIEW */}
+        <div className="lg:col-span-5 flex justify-center">
+          <HoloPlayerCard stats={stats} />
+        </div>
 
-          <div className="flex-1 space-y-1.5">
-            <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-              <h1 className="text-3xl sm:text-4xl font-black uppercase text-white tracking-tight">
-                {stats.name}
-              </h1>
-              {stats.nickname && (
-                <span className="rounded-full bg-hoop-orange/15 border border-hoop-orange/30 px-3 py-0.5 text-xs font-bold text-hoop-amber">
-                  &quot;{stats.nickname}&quot;
-                </span>
-              )}
-            </div>
-
-            <p className="text-xs text-gray-400">
-              Shooting record: {stats.wins} Wins • {stats.losses} Losses • {stats.totalGames} Total Matches
-            </p>
-
-            {/* QUICK HIGHLIGHT BADGES */}
-            <div className="pt-2 flex flex-wrap items-center justify-center sm:justify-start gap-2">
-              <span className="rounded-xl bg-champion-gold/15 border border-champion-gold/30 px-3 py-1 text-xs font-black text-champion-gold">
-                🏆 {stats.winRate}% Win Rate
-              </span>
-              <span className="rounded-xl bg-emerald-500/15 border border-emerald-500/30 px-3 py-1 text-xs font-black text-emerald-300">
-                🎯 {stats.accuracy}% Shooting Accuracy
-              </span>
-              <span className="rounded-xl bg-victim-red/15 border border-victim-red/30 px-3 py-1 text-xs font-black text-rose-400">
-                💪 {stats.totalPushups} Total Push-ups
-              </span>
+        {/* HERO DETAILS */}
+        <section className="lg:col-span-7 relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-surface via-surface-light to-surface p-6 sm:p-8 shadow-2xl space-y-5">
+          <div className="flex items-center gap-4">
+            <PlayerAvatar
+              avatar={stats.avatar}
+              name={stats.name}
+              size="xl"
+              ring
+              className="shadow-xl"
+            />
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <h1 className="text-2xl sm:text-4xl font-black uppercase text-white tracking-tight">
+                  {stats.name}
+                </h1>
+                {stats.nickname && (
+                  <span className="rounded-full bg-hoop-orange/15 border border-hoop-orange/30 px-3 py-0.5 text-xs font-bold text-hoop-amber">
+                    &quot;{stats.nickname}&quot;
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-gray-400 mt-1">
+                Career Record: {stats.wins} Wins • {stats.losses} Losses • {stats.totalGames} Total Matches
+              </p>
             </div>
           </div>
-        </div>
-      </section>
+
+          {/* QUICK HIGHLIGHT BADGES */}
+          <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-white/10">
+            <span className="rounded-xl bg-champion-gold/15 border border-champion-gold/30 px-3 py-1.5 text-xs font-black text-champion-gold flex items-center gap-1.5">
+              <Trophy className="w-3.5 h-3.5" /> {stats.winRate}% Win Rate
+            </span>
+            <span className="rounded-xl bg-emerald-500/15 border border-emerald-500/30 px-3 py-1.5 text-xs font-black text-emerald-300 flex items-center gap-1.5">
+              <Target className="w-3.5 h-3.5" /> {stats.accuracy}% Shooting Accuracy
+            </span>
+            <span className="rounded-xl bg-victim-red/15 border border-victim-red/30 px-3 py-1.5 text-xs font-black text-rose-400 flex items-center gap-1.5">
+              <Dumbbell className="w-3.5 h-3.5" /> {stats.totalPushups} Total Push-ups
+            </span>
+            {stats.currentWinStreak >= 2 && (
+              <span className="rounded-xl bg-hoop-orange/20 border border-hoop-orange/40 px-3 py-1.5 text-xs font-black text-hoop-amber flex items-center gap-1.5 animate-pulse">
+                <Flame className="w-3.5 h-3.5" /> {stats.currentWinStreak} Win Streak 🔥
+              </span>
+            )}
+          </div>
+        </section>
+      </div>
 
       {/* STATS MATRIX CARDS */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">

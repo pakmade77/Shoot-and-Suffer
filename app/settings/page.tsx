@@ -14,8 +14,10 @@ import {
   Sliders,
   Plus,
   Minus,
+  Palette,
 } from "lucide-react";
 import { sounds } from "@/lib/sound";
+import { THEME_OPTIONS, ThemeId, applyTheme, getStoredTheme } from "@/lib/theme";
 
 export default function SettingsPage() {
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -24,10 +26,13 @@ export default function SettingsPage() {
   const [isCustomDefault, setIsCustomDefault] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [resetSuccess, setResetSuccess] = useState(false);
-  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [voiceEnabled, setVoiceEnabled] = useState(true);
+  const [activeTheme, setActiveTheme] = useState<ThemeId>("streetball");
 
   useEffect(() => {
     setSoundEnabled(sounds.isEnabled());
+    setVoiceEnabled(sounds.isVoiceEnabled());
+    setActiveTheme(getStoredTheme());
     const storedPunishment = localStorage.getItem("shoot_suffer_default_punishment");
     if (storedPunishment) {
       const num = Number(storedPunishment);
@@ -42,9 +47,24 @@ export default function SettingsPage() {
     if (storedAnim !== null) setAnimationsEnabled(storedAnim === "true");
   }, []);
 
+  const handleSelectTheme = (themeId: ThemeId) => {
+    setActiveTheme(themeId);
+    applyTheme(themeId);
+    sounds.playClick();
+    sounds.haptic("medium");
+  };
+
   const handleToggleSound = () => {
     const next = sounds.toggle();
     setSoundEnabled(next);
+  };
+
+  const handleToggleVoice = () => {
+    const next = sounds.toggleVoice();
+    setVoiceEnabled(next);
+    if (next) {
+      sounds.voiceAnnounce("Voice Announcer enabled!");
+    }
   };
 
   const handleToggleAnimations = () => {
@@ -61,15 +81,38 @@ export default function SettingsPage() {
     sounds.playClick();
   };
 
+  const [resetModalType, setResetModalType] = useState<"history_only" | "full_seed" | null>(null);
+  const [resetMessage, setResetMessage] = useState("");
+
+  const handleResetHistoryOnly = async () => {
+    try {
+      setResetting(true);
+      const res = await fetch("/api/reset-history", { method: "POST" });
+      if (res.ok) {
+        const data = await res.json();
+        sounds.playVictory();
+        setResetMessage(data.message || "Match history cleared! All player profiles preserved.");
+        setResetSuccess(true);
+        setResetModalType(null);
+        setTimeout(() => setResetSuccess(false), 5000);
+      }
+    } catch (err) {
+      console.error("Reset history error", err);
+    } finally {
+      setResetting(false);
+    }
+  };
+
   const handleResetDatabase = async () => {
     try {
       setResetting(true);
       const res = await fetch("/api/seed", { method: "POST" });
       if (res.ok) {
         sounds.playVictory();
+        setResetMessage("Database reset and seeded successfully! Players preserved.");
         setResetSuccess(true);
-        setShowConfirmModal(false);
-        setTimeout(() => setResetSuccess(false), 4000);
+        setResetModalType(null);
+        setTimeout(() => setResetSuccess(false), 5000);
       }
     } catch (err) {
       console.error("Reset error", err);
@@ -91,9 +134,9 @@ export default function SettingsPage() {
       </div>
 
       {resetSuccess && (
-        <div className="rounded-2xl border border-emerald-500/40 bg-emerald-500/10 p-4 text-emerald-300 flex items-center gap-3 text-sm font-bold">
-          <Check className="w-5 h-5 text-emerald-400" />
-          <span>Database was reset and re-seeded with demo data successfully!</span>
+        <div className="rounded-2xl border border-emerald-500/40 bg-emerald-500/10 p-4 text-emerald-300 flex items-center gap-3 text-sm font-bold animate-in fade-in zoom-in-95 duration-200">
+          <Check className="w-5 h-5 text-emerald-400 shrink-0" />
+          <span>{resetMessage || "Operation completed successfully!"}</span>
         </div>
       )}
 
@@ -221,6 +264,69 @@ export default function SettingsPage() {
         )}
       </section>
 
+      {/* 🎨 VISUAL THEME & ARENA PALETTE */}
+      <section className="rounded-3xl border border-white/10 bg-surface/80 p-6 backdrop-blur-md space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-base font-black uppercase text-white tracking-wide flex items-center gap-2">
+              <Palette className="w-5 h-5 text-hoop-orange" />
+              Visual Theme &amp; Arena Style
+            </h2>
+            <p className="text-xs text-gray-400 mt-0.5">
+              Customize colors, court glows, and stadium lighting across the entire app.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+          {THEME_OPTIONS.map((theme) => {
+            const isSelected = activeTheme === theme.id;
+            return (
+              <button
+                key={theme.id}
+                type="button"
+                onClick={() => handleSelectTheme(theme.id)}
+                className={`flex items-center justify-between rounded-2xl p-4 text-left transition-all border ${
+                  isSelected
+                    ? "border-2 border-hoop-orange bg-white/[0.08] shadow-lg shadow-hoop-orange/20 ring-1 ring-hoop-orange/40"
+                    : "border-white/10 bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.05]"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <span className="text-2xl">{theme.icon}</span>
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-sm font-black uppercase text-white tracking-wide">
+                        {theme.name}
+                      </p>
+                      {isSelected && (
+                        <span className="rounded-full bg-hoop-orange/20 text-hoop-amber border border-hoop-orange/30 px-2 py-0.2 text-[9px] font-black uppercase">
+                          Active
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-[11px] text-gray-400 mt-0.5">{theme.subtitle}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center -space-x-1.5">
+                    {theme.previewColors.map((color, idx) => (
+                      <span
+                        key={idx}
+                        style={{ backgroundColor: color }}
+                        className="h-4 w-4 rounded-full border border-surface shadow-sm"
+                      />
+                    ))}
+                  </div>
+                  {isSelected && <Check className="w-4 h-4 text-hoop-orange stroke-[3]" />}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </section>
+
       {/* AUDIO & VISUAL TOGGLES */}
       <section className="rounded-3xl border border-white/10 bg-surface/80 p-6 backdrop-blur-md space-y-4">
         <h2 className="text-base font-black uppercase text-white tracking-wide flex items-center gap-2">
@@ -287,10 +393,37 @@ export default function SettingsPage() {
             </button>
           </div>
 
-          {/* Sound Effect Previews */}
+          {/* Voice Announcer toggle */}
+          <div className="flex items-center justify-between rounded-2xl border border-white/5 bg-white/[0.02] p-4">
+            <div className="flex items-center gap-3">
+              <span className="text-2xl">🎙️</span>
+              <div>
+                <p className="text-sm font-bold text-white">Streetball Voice Announcer (AI Voice)</p>
+                <p className="text-xs text-gray-400">
+                  Live voice callouts for player turns, swishes, bricks, and sudden death.
+                </p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleToggleVoice}
+              className={`relative h-7 w-12 rounded-full transition-colors ${
+                voiceEnabled ? "bg-emerald-500" : "bg-white/20"
+              }`}
+            >
+              <span
+                className={`absolute top-1 left-1 h-5 w-5 rounded-full bg-white transition-transform ${
+                  voiceEnabled ? "translate-x-5" : "translate-x-0"
+                }`}
+              />
+            </button>
+          </div>
+
+          {/* Sound & Voice Effect Previews */}
           <div className="pt-2">
             <p className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-2.5">
-              🔊 Test Sound Effects
+              🔊 Test Sound &amp; Voice FX
             </p>
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
               <button
@@ -313,6 +446,24 @@ export default function SettingsPage() {
 
               <button
                 type="button"
+                onClick={() => sounds.announceTurn("Prabu", 1)}
+                className="flex items-center justify-center gap-2 rounded-xl border border-cyan-500/30 bg-cyan-500/10 p-3 text-xs font-black uppercase text-cyan-300 hover:bg-cyan-500/20 active:scale-95 transition-all shadow-sm"
+              >
+                <span>🎙️</span>
+                <span>Voice: Announce Turn</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => sounds.announceSuddenDeath()}
+                className="flex items-center justify-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs font-black uppercase text-amber-300 hover:bg-amber-500/20 active:scale-95 transition-all shadow-sm"
+              >
+                <span>⚡</span>
+                <span>Voice: Sudden Death</span>
+              </button>
+
+              <button
+                type="button"
                 onClick={() => sounds.playVictory()}
                 className="flex items-center justify-center gap-2 rounded-xl border border-champion-gold/30 bg-champion-gold/10 p-3 text-xs font-black uppercase text-champion-gold hover:bg-champion-gold/20 active:scale-95 transition-all shadow-sm"
               >
@@ -327,24 +478,6 @@ export default function SettingsPage() {
               >
                 <span>📢</span>
                 <span>Buzzer</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => sounds.playWhistle()}
-                className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 p-3 text-xs font-black uppercase text-gray-200 hover:bg-white/10 active:scale-95 transition-all shadow-sm"
-              >
-                <span>🏁</span>
-                <span>Whistle</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => sounds.playBounce()}
-                className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 p-3 text-xs font-black uppercase text-gray-200 hover:bg-white/10 active:scale-95 transition-all shadow-sm"
-              >
-                <span>🏀</span>
-                <span>Ball Bounce</span>
               </button>
             </div>
           </div>
@@ -418,52 +551,67 @@ export default function SettingsPage() {
       <section className="rounded-3xl border border-rose-500/20 bg-surface/80 p-6 backdrop-blur-md space-y-4">
         <h2 className="text-base font-black uppercase text-rose-400 tracking-wide flex items-center gap-2">
           <ShieldAlert className="w-5 h-5 text-victim-red" />
-          Data &amp; Reset
+          Data &amp; Reset Management
         </h2>
         <p className="text-xs text-gray-400">
-          Reset all game scores, player stats, and push-up counters back to the initial demo seed data.
+          Reset matches, debts, and history while keeping your registered players safe in Supabase, or re-seed the full initial roster.
         </p>
 
-        <button
-          type="button"
-          onClick={() => setShowConfirmModal(true)}
-          className="inline-flex items-center gap-2 rounded-2xl border border-rose-500/30 bg-rose-500/10 px-5 py-3 text-xs font-black uppercase tracking-wider text-rose-300 hover:bg-rose-500/20 transition-colors"
-        >
-          <RotateCcw className="w-4 h-4" />
-          Reset Demo Data
-        </button>
+        <div className="flex flex-wrap gap-3 pt-1">
+          <button
+            type="button"
+            onClick={() => setResetModalType("history_only")}
+            className="inline-flex items-center gap-2 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-5 py-3 text-xs font-black uppercase tracking-wider text-amber-300 hover:bg-amber-500/20 active:scale-95 transition-all shadow-md"
+          >
+            <RotateCcw className="w-4 h-4" />
+            Reset Match History Only (Keep Players)
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setResetModalType("full_seed")}
+            className="inline-flex items-center gap-2 rounded-2xl border border-rose-500/30 bg-rose-500/10 px-5 py-3 text-xs font-black uppercase tracking-wider text-rose-300 hover:bg-rose-500/20 active:scale-95 transition-all shadow-md"
+          >
+            <RotateCcw className="w-4 h-4" />
+            Reset &amp; Seed Default Roster
+          </button>
+        </div>
       </section>
 
       {/* CONFIRMATION MODAL */}
-      {showConfirmModal && (
+      {resetModalType !== null && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div
             className="fixed inset-0 bg-black/75 backdrop-blur-sm"
-            onClick={() => setShowConfirmModal(false)}
+            onClick={() => setResetModalType(null)}
           />
           <div className="relative z-10 w-full max-w-md rounded-3xl bg-surface border border-white/10 p-6 shadow-2xl space-y-4 text-center">
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-rose-500/20 text-3xl text-rose-400">
               ⚠️
             </div>
-            <h3 className="text-xl font-black uppercase text-white">Reset Database?</h3>
+            <h3 className="text-xl font-black uppercase text-white">
+              {resetModalType === "history_only" ? "Reset Match History?" : "Reset & Seed Database?"}
+            </h3>
             <p className="text-xs text-gray-300 leading-relaxed">
-              This will wipe all custom matches and restore the default office players (Mul, Jessy, Azhar, Zainul, Prabu, Naufal, Surya).
+              {resetModalType === "history_only"
+                ? "This will delete all match scores, shots, and push-up debt records. All registered players and custom avatars in Supabase will be 100% PRESERVED."
+                : "This will wipe match history and ensure the standard 9 office players are configured."}
             </p>
             <div className="grid grid-cols-2 gap-3 pt-2">
               <button
                 type="button"
-                onClick={() => setShowConfirmModal(false)}
+                onClick={() => setResetModalType(null)}
                 className="rounded-xl border border-white/10 bg-white/5 py-3 text-xs font-bold text-gray-300 uppercase hover:bg-white/10"
               >
                 Cancel
               </button>
               <button
                 type="button"
-                onClick={handleResetDatabase}
+                onClick={resetModalType === "history_only" ? handleResetHistoryOnly : handleResetDatabase}
                 disabled={resetting}
                 className="rounded-xl bg-victim-red py-3 text-xs font-black text-white uppercase hover:bg-rose-600 shadow-lg shadow-victim-red/30 disabled:opacity-50"
               >
-                {resetting ? "Resetting..." : "Yes, Reset Data"}
+                {resetting ? "Resetting..." : "Yes, Reset Now"}
               </button>
             </div>
           </div>

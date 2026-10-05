@@ -2,11 +2,80 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
+/* 🎨 THEME 1: STREETBALL (DEFAULT) */
+:root,
+[data-theme="streetball"] {
   --background: #090d16;
   --foreground: #f3f4f6;
-  --primary-orange: #ff5500;
-  --primary-glow: #ff7700;
+  --surface: #121826;
+  --surface-light: #1a2234;
+  --surface-hover: #222d42;
+  --hoop-orange: #ff5500;
+  --hoop-glow: #ff7700;
+  --hoop-amber: #f59e0b;
+  --hoop-yellow: #fbbf24;
+  --champion-gold: #f59e0b;
+  --court-glow: 255, 85, 0;
+}
+
+/* ⚡ THEME 2: NEON CYBERPUNK */
+[data-theme="cyberpunk"] {
+  --background: #060814;
+  --foreground: #f0fdf4;
+  --surface: #0e1224;
+  --surface-light: #151a33;
+  --surface-hover: #1f274a;
+  --hoop-orange: #00f0ff;
+  --hoop-glow: #38bdf8;
+  --hoop-amber: #f700ff;
+  --hoop-yellow: #e879f9;
+  --champion-gold: #00f0ff;
+  --court-glow: 0, 240, 255;
+}
+
+/* 🏆 THEME 3: MIDNIGHT CHAMPION / 24K GOLD */
+[data-theme="gold"] {
+  --background: #080808;
+  --foreground: #fafaf9;
+  --surface: #141414;
+  --surface-light: #1f1f1f;
+  --surface-hover: #292929;
+  --hoop-orange: #eab308;
+  --hoop-glow: #facc15;
+  --hoop-amber: #fbbf24;
+  --hoop-yellow: #fef08a;
+  --champion-gold: #eab308;
+  --court-glow: 234, 179, 8;
+}
+
+/* 🌿 THEME 4: EMERALD ARENA / BOSTON CELTICS */
+[data-theme="emerald"] {
+  --background: #05100b;
+  --foreground: #f0fdf4;
+  --surface: #0a1f16;
+  --surface-light: #102d20;
+  --surface-hover: #183d2c;
+  --hoop-orange: #10b981;
+  --hoop-glow: #34d399;
+  --hoop-amber: #6ee7b7;
+  --hoop-yellow: #a7f3d0;
+  --champion-gold: #10b981;
+  --court-glow: 16, 185, 129;
+}
+
+/* 🌴 THEME 5: MIAMI VICE NIGHTS */
+[data-theme="miami"] {
+  --background: #090a16;
+  --foreground: #fff1f2;
+  --surface: #121426;
+  --surface-light: #1a1e36;
+  --surface-hover: #252b4d;
+  --hoop-orange: #f43f5e;
+  --hoop-glow: #fb7185;
+  --hoop-amber: #fb923c;
+  --hoop-yellow: #fcd34d;
+  --champion-gold: #fb7185;
+  --court-glow: 244, 63, 94;
 }
 
 body {
@@ -16,18 +85,19 @@ body {
   -webkit-tap-highlight-color: transparent;
   user-select: none;
   min-height: 100vh;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Basketball Court Wood Lines subtle pattern */
+/* Dynamic Court Lines Background */
 .court-grid {
   background-image: 
-    radial-gradient(circle at 50% 0%, rgba(255, 85, 0, 0.12) 0%, transparent 65%),
-    linear-gradient(to bottom, rgba(18, 24, 38, 0.8), rgba(9, 13, 22, 0.95));
+    radial-gradient(circle at 50% 0%, rgba(var(--court-glow), 0.15) 0%, transparent 65%),
+    linear-gradient(to bottom, var(--surface), var(--background));
 }
 
 /* Glassmorphism Card Style */
 .glass-card {
-  background: rgba(18, 24, 38, 0.75);
+  background: var(--surface);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -37,23 +107,10 @@ body {
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .glass-card-hover:hover {
-  background: rgba(26, 34, 52, 0.85);
-  border-color: rgba(255, 85, 0, 0.4);
+  background: var(--surface-light);
+  border-color: var(--hoop-orange);
   transform: translateY(-2px);
-  box-shadow: 0 10px 25px -5px rgba(255, 85, 0, 0.15);
-}
-
-/* Neon Glows */
-.glow-orange {
-  box-shadow: 0 0 20px rgba(255, 85, 0, 0.4);
-}
-
-.glow-gold {
-  box-shadow: 0 0 20px rgba(245, 158, 11, 0.4);
-}
-
-.glow-red {
-  box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+  box-shadow: 0 10px 25px -5px rgba(var(--court-glow), 0.25);
 }
 
 /* Custom Scrollbar */
@@ -63,14 +120,14 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #090d16;
+  background: var(--background);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #222d42;
+  background: var(--surface-hover);
   border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #ff5500;
+  background: var(--hoop-orange);
 }

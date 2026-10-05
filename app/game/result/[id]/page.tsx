@@ -19,9 +19,11 @@ import { PlayerAvatar } from "@/components/ui/PlayerAvatar";
 import { PlayerShuffleModal } from "@/components/game/PlayerShuffleModal";
 import { AdminPinModal } from "@/components/game/AdminPinModal";
 import { EditGameModal } from "@/components/game/EditGameModal";
+import { PushupProofModal } from "@/components/game/PushupProofModal";
 import { sounds } from "@/lib/sound";
 import { formatDate } from "@/lib/utils";
 import { isSessionAdminVerified, getClientAdminPin } from "@/lib/auth";
+import { Camera } from "lucide-react";
 
 interface GameDetail {
   id: string;
@@ -59,6 +61,9 @@ export default function GameResultPage({
   const [loading, setLoading] = useState(true);
   const [isShuffleModalOpen, setIsShuffleModalOpen] = useState(false);
 
+  // Push-up Proof Modal
+  const [selectedProofLoser, setSelectedProofLoser] = useState<GameDetail["gamePlayers"][0] | null>(null);
+
   // Admin Edit Modal States
   const [isPinModalOpen, setIsPinModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -69,8 +74,18 @@ export default function GameResultPage({
       setLoading(true);
       const res = await fetch(`/api/games/${id}`);
       if (res.ok) {
-        const data = await res.json();
+        const data: GameDetail = await res.json();
         setGame(data);
+
+        // Announce Victory Voice
+        const winners = data.gamePlayers.filter((gp) => gp.isWinner);
+        const losers = data.gamePlayers.filter((gp) => gp.isLoser);
+        if (winners.length > 0 && losers.length > 0) {
+          sounds.announceVictory(
+            winners.map((w) => w.player.name).join(", "),
+            losers.map((l) => l.player.name).join(", ")
+          );
+        }
       }
     } catch (err) {
       console.error("Failed to load game result", err);
@@ -232,9 +247,24 @@ export default function GameResultPage({
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 rounded-xl bg-victim-red/20 border border-victim-red/40 px-4 py-2.5 text-xs font-black text-rose-300 uppercase tracking-wider">
-                  <Dumbbell className="w-4 h-4 text-victim-red" />
-                  <span>+{loser.pushupAmount} Push-ups Added</span>
+                <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto justify-end">
+                  <div className="flex items-center gap-2 rounded-xl bg-victim-red/20 border border-victim-red/40 px-3 py-2 text-xs font-black text-rose-300 uppercase tracking-wider">
+                    <Dumbbell className="w-3.5 h-3.5 text-victim-red" />
+                    <span>+{loser.pushupAmount} Push-ups</span>
+                  </div>
+
+                  {/* FOTO BUKTI PUSH-UP BUTTON */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      sounds.playClick();
+                      setSelectedProofLoser(loser);
+                    }}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-hoop-orange to-hoop-amber hover:brightness-110 px-3 py-2 text-xs font-black uppercase tracking-wider text-white shadow-md shadow-hoop-orange/20 active:scale-95 transition-all"
+                  >
+                    <Camera className="w-3.5 h-3.5" />
+                    <span>Foto Bukti 📸</span>
+                  </button>
                 </div>
               </div>
             );
@@ -392,6 +422,19 @@ export default function GameResultPage({
             fetchGame();
           }}
           onClose={() => setIsEditModalOpen(false)}
+        />
+      )}
+
+      {/* PUSH-UP PROOF WATERMARK CAMERA MODAL */}
+      {selectedProofLoser && (
+        <PushupProofModal
+          isOpen={Boolean(selectedProofLoser)}
+          onClose={() => setSelectedProofLoser(null)}
+          loserName={selectedProofLoser.player.name}
+          loserNickname={selectedProofLoser.player.nickname}
+          pushupAmount={selectedProofLoser.pushupAmount}
+          score={selectedProofLoser.totalScore}
+          gameId={game.id}
         />
       )}
     </div>

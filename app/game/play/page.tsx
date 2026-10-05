@@ -119,8 +119,26 @@ export default function PlayGamePage() {
     ? suddenDeathShots[currentPlayer.id] ?? null
     : null;
 
+  // Announce turn changes
+  useEffect(() => {
+    if (currentPlayer) {
+      if (isSuddenDeath) {
+        sounds.voiceAnnounce(`Sudden Death round ${suddenDeathRound}! ${currentPlayer.name}, make this shot!`);
+      } else if (shootingMode === "round_by_round") {
+        sounds.announceTurn(currentPlayer.name, currentRound);
+      } else {
+        sounds.announceTurn(currentPlayer.name);
+      }
+    }
+  }, [activeIndex, currentRound, isSuddenDeath, suddenDeathRound]);
+
   const handleShotChange = (shotKey: "shot1" | "shot2" | "shot3", value: boolean) => {
     setError(null);
+    if (value) {
+      sounds.announceHit();
+    } else {
+      sounds.announceMiss();
+    }
     setPlayerShots((prev) => {
       const copy = [...prev];
       copy[activeIndex] = {
@@ -135,6 +153,11 @@ export default function PlayGamePage() {
     if (!currentPlayer) return;
     setError(null);
     setSuddenDeathAlertMessage(null);
+    if (value) {
+      sounds.announceHit();
+    } else {
+      sounds.announceMiss();
+    }
     setSuddenDeathShots((prev) => ({
       ...prev,
       [currentPlayer.id]: value,

@@ -23,8 +23,10 @@ import {
 } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
 import { PlayerAvatar } from "@/components/ui/PlayerAvatar";
+import { calculateOVR } from "@/components/ui/HoloPlayerCard";
 import { compressImageToDataUrl } from "@/lib/imageUtils";
 import { sounds } from "@/lib/sound";
+import { PlayerStats } from "@/lib/calculations";
 
 interface Player {
   id: string;
@@ -294,57 +296,90 @@ export default function PlayersPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredPlayers.map((player) => (
-            <motion.div
-              key={player.id}
-              whileHover={{ y: -2 }}
-              className={`rounded-3xl border p-5 backdrop-blur-md transition-all ${
-                player.active
-                  ? "border-white/10 bg-surface/80 hover:border-hoop-orange/30"
-                  : "border-white/5 bg-surface/40 opacity-60"
-              }`}
-            >
-              <div className="flex items-start justify-between">
-                <Link
-                  href={`/players/${player.id}`}
-                  className="flex items-center gap-3.5 group flex-1 min-w-0"
-                >
-                  <PlayerAvatar
-                    avatar={player.avatar}
-                    name={player.name}
-                    size="lg"
-                    className="group-hover:scale-105 transition-transform ring-1 ring-white/20"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <h3 className="font-black text-lg text-white group-hover:text-hoop-orange transition-colors truncate">
-                      {player.name}
-                    </h3>
-                    <p className="text-xs font-medium text-hoop-amber truncate">
-                      {player.nickname ? `"${player.nickname}"` : "Casual Shooter"}
-                    </p>
-                  </div>
-                </Link>
+          {filteredPlayers.map((player) => {
+            const cardData = calculateOVR({
+              id: player.id,
+              name: player.name,
+              nickname: player.nickname,
+              avatar: player.avatar,
+              active: player.active,
+              totalGames: player.totalGames,
+              wins: player.wins,
+              losses: player.losses,
+              winRate: player.winRate,
+              lossRate: 100 - player.winRate,
+              totalPoints: player.totalPoints,
+              averageScore: player.totalGames > 0 ? player.totalPoints / player.totalGames : 0,
+              bestScore: 3,
+              totalShots: player.totalGames * 3,
+              totalHits: player.totalPoints,
+              totalMisses: player.totalGames * 3 - player.totalPoints,
+              accuracy: player.totalGames > 0 ? (player.totalPoints / (player.totalGames * 3)) * 100 : 50,
+              totalPushups: player.totalPushups,
+              completedPushups: player.completedPushups,
+              pendingPushups: player.pendingPushups,
+              avgPushupsPerGame: 0,
+              currentWinStreak: 0,
+              currentLossStreak: 0,
+              maxWinStreak: 0,
+            });
 
-                {/* Card Actions */}
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    onClick={() => handleOpenEdit(player)}
-                    className="rounded-lg p-2 text-gray-400 hover:bg-white/10 hover:text-white transition-colors"
-                    title="Edit Player & Photo"
+            return (
+              <motion.div
+                key={player.id}
+                whileHover={{ y: -2 }}
+                className={`rounded-3xl border p-5 backdrop-blur-md transition-all ${
+                  player.active
+                    ? "border-white/10 bg-surface/80 hover:border-hoop-orange/30"
+                    : "border-white/5 bg-surface/40 opacity-60"
+                }`}
+              >
+                <div className="flex items-start justify-between">
+                  <Link
+                    href={`/players/${player.id}`}
+                    className="flex items-center gap-3.5 group flex-1 min-w-0"
                   >
-                    <Edit2 className="w-4 h-4" />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDeletePlayer(player.id, player.name)}
-                    className="rounded-lg p-2 text-gray-400 hover:bg-rose-500/20 hover:text-rose-400 transition-colors"
-                    title="Delete Player"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                    <PlayerAvatar
+                      avatar={player.avatar}
+                      name={player.name}
+                      size="lg"
+                      className="group-hover:scale-105 transition-transform ring-1 ring-white/20"
+                    />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-black text-lg text-white group-hover:text-hoop-orange transition-colors truncate">
+                          {player.name}
+                        </h3>
+                        <span className="flex-shrink-0 rounded-lg bg-white/10 px-2 py-0.5 text-[10px] font-black uppercase text-hoop-amber border border-white/15">
+                          {cardData.ovr} OVR
+                        </span>
+                      </div>
+                      <p className="text-xs font-medium text-gray-400 truncate mt-0.5">
+                        {player.nickname ? `"${player.nickname}"` : cardData.archetype}
+                      </p>
+                    </div>
+                  </Link>
+
+                  {/* Card Actions */}
+                  <div className="flex items-center gap-1">
+                    <button
+                      type="button"
+                      onClick={() => handleOpenEdit(player)}
+                      className="rounded-lg p-2 text-gray-400 hover:bg-white/10 hover:text-white transition-colors"
+                      title="Edit Player & Photo"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeletePlayer(player.id, player.name)}
+                      className="rounded-lg p-2 text-gray-400 hover:bg-rose-500/20 hover:text-rose-400 transition-colors"
+                      title="Delete Player"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
-              </div>
 
               {/* STATS MATRIX */}
               <div className="mt-5 grid grid-cols-3 gap-2 border-t border-white/5 pt-4 text-center">
@@ -376,7 +411,8 @@ export default function PlayersPage() {
                 View Full Profile &rarr;
               </Link>
             </motion.div>
-          ))}
+            );
+          })}
         </div>
       )}
 

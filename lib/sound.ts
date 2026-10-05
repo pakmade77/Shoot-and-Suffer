@@ -5,10 +5,14 @@ class SoundManager {
   private enabled: boolean = true;
   private failSoundIndex: number = 0;
 
+  private voiceEnabled: boolean = true;
+
   constructor() {
     if (typeof window !== "undefined") {
       const stored = localStorage.getItem("shoot_suffer_sound");
       this.enabled = stored !== null ? stored === "true" : true;
+      const storedVoice = localStorage.getItem("shoot_suffer_voice_announcer");
+      this.voiceEnabled = storedVoice !== null ? storedVoice === "true" : true;
     }
   }
 
@@ -40,6 +44,107 @@ class SoundManager {
   public toggle(): boolean {
     this.setEnabled(!this.enabled);
     return this.enabled;
+  }
+
+  public isVoiceEnabled(): boolean {
+    return this.voiceEnabled;
+  }
+
+  public setVoiceEnabled(enabled: boolean) {
+    this.voiceEnabled = enabled;
+    if (typeof window !== "undefined") {
+      localStorage.setItem("shoot_suffer_voice_announcer", String(enabled));
+    }
+  }
+
+  public toggleVoice(): boolean {
+    this.setVoiceEnabled(!this.voiceEnabled);
+    return this.voiceEnabled;
+  }
+
+  // 📳 Haptic Vibration Feedback for Mobile Devices
+  public haptic(type: "light" | "medium" | "heavy" | "success" | "warning" | "error" = "light") {
+    if (typeof window === "undefined" || !("vibrate" in navigator)) return;
+    try {
+      switch (type) {
+        case "light":
+          navigator.vibrate(15);
+          break;
+        case "medium":
+          navigator.vibrate(35);
+          break;
+        case "heavy":
+          navigator.vibrate([40, 20, 40]);
+          break;
+        case "success":
+          navigator.vibrate([20, 30, 60]);
+          break;
+        case "warning":
+          navigator.vibrate([40, 40, 40]);
+          break;
+        case "error":
+          navigator.vibrate([80, 40, 80, 40, 120]);
+          break;
+      }
+    } catch {
+      // Vibration not permitted or supported
+    }
+  }
+
+  // 🎙️ Streetball Voice Announcer via Web Speech Synthesis
+  public voiceAnnounce(text: string, options?: { pitch?: number; rate?: number }) {
+    if (!this.voiceEnabled || typeof window === "undefined" || !("speechSynthesis" in window)) return;
+    try {
+      window.speechSynthesis.cancel(); // Stop any pending speech
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = options?.rate ?? 1.12; // Fast and energetic streetball pace
+      utterance.pitch = options?.pitch ?? 1.05; // Slightly high hype tone
+      utterance.volume = 0.9;
+      
+      // Prefer English voice for arcade punchiness, or fallback to default
+      const voices = window.speechSynthesis.getVoices();
+      const preferred = voices.find(
+        (v) => v.lang.startsWith("en") && (v.name.includes("Google") || v.name.includes("Natural") || v.name.includes("David"))
+      ) || voices[0];
+      if (preferred) utterance.voice = preferred;
+
+      window.speechSynthesis.speak(utterance);
+    } catch {
+      // Speech synthesis not available
+    }
+  }
+
+  // 🎙️ Voice Callouts
+  public announceTurn(playerName: string, round?: number) {
+    if (round) {
+      this.voiceAnnounce(`Round ${round}! Up next: ${playerName}!`);
+    } else {
+      this.voiceAnnounce(`Next shooter: ${playerName}! Let's see it!`);
+    }
+  }
+
+  public announceHit() {
+    this.haptic("success");
+    const phrases = ["Swish!", "Splash!", "Nothing but net!", "Bucket!", "Pure silk!", "That's cash!"];
+    const phrase = phrases[Math.floor(Math.random() * phrases.length)];
+    this.voiceAnnounce(phrase, { rate: 1.25, pitch: 1.1 });
+  }
+
+  public announceMiss() {
+    this.haptic("error");
+    const phrases = ["Airball!", "Brick!", "Clank!", "Off the iron!", "No good!", "Ouch, that hurts!"];
+    const phrase = phrases[Math.floor(Math.random() * phrases.length)];
+    this.voiceAnnounce(phrase, { rate: 1.2, pitch: 0.95 });
+  }
+
+  public announceSuddenDeath() {
+    this.haptic("warning");
+    this.voiceAnnounce("Sudden death! All or nothing! One shot to survive!");
+  }
+
+  public announceVictory(winnerName: string, loserName: string) {
+    this.haptic("success");
+    this.voiceAnnounce(`Game over! ${winnerName} takes the crown! ${loserName} pays the push-up tax!`);
   }
 
   // 🏀 CONGRATS / SWISH SOUND: Crisp net swoosh + uplifting, sparkling triumphant chime arpeggio

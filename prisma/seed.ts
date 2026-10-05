@@ -14,9 +14,20 @@ const defaultPlayers = [
   { name: "Zainul", nickname: "Sharpshooter", avatar: "/uploads/avatars/zainul.png" },
 ];
 
+export async function resetGameHistoryOnly() {
+  console.log("🧹 Resetting match history records only (preserving all players)...");
+  const res = await prisma.game.deleteMany();
+  console.log(`✅ Cleared ${res.count} game records. All player profiles remain untouched.`);
+  return res;
+}
+
 export async function seedDatabase() {
   console.log("🌱 Resetting match records and initializing players...");
 
+  // 1. Delete all past game history
+  await prisma.game.deleteMany();
+
+  // 2. Ensure default players exist without overwriting custom edits if player already exists
   for (const p of defaultPlayers) {
     const existing = await prisma.player.findFirst({
       where: { name: p.name },
@@ -26,8 +37,8 @@ export async function seedDatabase() {
       await prisma.player.update({
         where: { id: existing.id },
         data: {
-          nickname: p.nickname,
-          avatar: p.avatar,
+          nickname: existing.nickname || p.nickname,
+          avatar: existing.avatar || p.avatar,
           active: true,
         },
       });
@@ -43,7 +54,7 @@ export async function seedDatabase() {
     }
   }
 
-  console.log(`✅ All 9 players preserved with custom avatars and nicknames.`);
+  console.log(`✅ All players preserved and game history wiped clean.`);
 }
 
 if (require.main === module) {
