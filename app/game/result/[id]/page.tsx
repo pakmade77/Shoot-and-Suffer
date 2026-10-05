@@ -12,12 +12,16 @@ import {
   Flame,
   ArrowRight,
   Sparkles,
+  Edit3,
 } from "lucide-react";
 import { WinnerConfetti } from "@/components/ui/WinnerConfetti";
 import { PlayerAvatar } from "@/components/ui/PlayerAvatar";
 import { PlayerShuffleModal } from "@/components/game/PlayerShuffleModal";
+import { AdminPinModal } from "@/components/game/AdminPinModal";
+import { EditGameModal } from "@/components/game/EditGameModal";
 import { sounds } from "@/lib/sound";
 import { formatDate } from "@/lib/utils";
+import { isSessionAdminVerified, getClientAdminPin } from "@/lib/auth";
 
 interface GameDetail {
   id: string;
@@ -55,6 +59,11 @@ export default function GameResultPage({
   const [loading, setLoading] = useState(true);
   const [isShuffleModalOpen, setIsShuffleModalOpen] = useState(false);
 
+  // Admin Edit Modal States
+  const [isPinModalOpen, setIsPinModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [verifiedAdminPin, setVerifiedAdminPin] = useState<string>("");
+
   const fetchGame = useCallback(async () => {
     try {
       setLoading(true);
@@ -73,6 +82,22 @@ export default function GameResultPage({
   useEffect(() => {
     fetchGame();
   }, [fetchGame]);
+
+  const handleTriggerEdit = () => {
+    sounds.playClick();
+    if (isSessionAdminVerified()) {
+      setVerifiedAdminPin(getClientAdminPin());
+      setIsEditModalOpen(true);
+    } else {
+      setIsPinModalOpen(true);
+    }
+  };
+
+  const handlePinSuccess = (pin: string) => {
+    setVerifiedAdminPin(pin);
+    setIsPinModalOpen(false);
+    setIsEditModalOpen(true);
+  };
 
   const handleRematch = () => {
     if (!game) return;
@@ -219,17 +244,29 @@ export default function GameResultPage({
 
       {/* SECTION 3: FULL MATCH SCOREBOARD TABLE */}
       <section className="rounded-3xl border border-white/10 bg-surface/80 p-6 backdrop-blur-md space-y-4">
-        <div className="flex items-center justify-between border-b border-white/10 pb-3">
-          <h3 className="text-base font-black uppercase tracking-wide text-white flex items-center gap-2">
-            <span>📊</span> Full Match Scoreboard
-          </h3>
-          <span className="text-xs text-gray-400 font-medium">
-            {formatDate(game.playedAt)}
-          </span>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-white/10 pb-3">
+          <div className="flex items-center gap-2">
+            <h3 className="text-base font-black uppercase tracking-wide text-white flex items-center gap-2">
+              <span>📊</span> Full Match Scoreboard
+            </h3>
+            <span className="text-xs text-gray-400 font-medium">
+              ({formatDate(game.playedAt)})
+            </span>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleTriggerEdit}
+            className="inline-flex items-center gap-1.5 self-start sm:self-auto text-xs font-bold text-hoop-amber hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 px-3 py-1.5 rounded-xl uppercase tracking-wider transition-all"
+            title="Edit match shots and recalculate results (Admin PIN)"
+          >
+            <Edit3 className="w-3.5 h-3.5" />
+            <span>Edit Skor (Admin)</span>
+          </button>
         </div>
 
         <div className="space-y-2">
-          {game.gamePlayers.map((gp, idx) => (
+          {game.gamePlayers.map((gp) => (
             <div
               key={gp.id}
               className={`flex items-center justify-between rounded-2xl border p-3.5 transition-colors ${
@@ -334,6 +371,30 @@ export default function GameResultPage({
           onClose={() => setIsShuffleModalOpen(false)}
         />
       )}
+
+      {/* ADMIN PIN MODAL */}
+      <AdminPinModal
+        isOpen={isPinModalOpen}
+        onSuccess={handlePinSuccess}
+        onClose={() => setIsPinModalOpen(false)}
+      />
+
+      {/* EDIT GAME MODAL */}
+      {game && (
+        <EditGameModal
+          isOpen={isEditModalOpen}
+          gameId={game.id}
+          initialPlayers={game.gamePlayers}
+          initialPunishment={game.punishmentAmount}
+          adminPin={verifiedAdminPin}
+          onSuccess={() => {
+            setIsEditModalOpen(false);
+            fetchGame();
+          }}
+          onClose={() => setIsEditModalOpen(false)}
+        />
+      )}
     </div>
   );
 }
+

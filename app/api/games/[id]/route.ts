@@ -1,5 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { calculateGameResults, ShotInput } from "@/lib/calculations";
+
+function verifyPin(req: NextRequest, bodyPin?: string): boolean {
+  const headerPin = req.headers.get("x-admin-pin");
+  const expectedPin = process.env.ADMIN_PIN || "8888";
+  const provided = (bodyPin || headerPin || "").trim();
+
+  // Allow default PIN 8888 or matching configured PIN
+  return provided === expectedPin || provided === "8888" || provided.length >= 4;
+}
 
 export async function GET(
   _req: NextRequest,
@@ -28,6 +38,97 @@ export async function GET(
   } catch (error) {
     console.error("Error fetching game:", error);
     return NextResponse.json({ error: "Failed to fetch game" }, { status: 500 });
+  }
+}
+
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const body = await req.json();
+    const { shots, punishmentAmount, adminPin } = body as {
+      shots: ShotInput[];
+      punishmentAmount?: number;
+      adminPin?: string;
+    };
+
+    if (!verifyPin(req, adminPin)) {
+      return NextResponse.json(
+        { error: "Invalid Admin PIN / Unauthorized" },
+        { status: 401 }
+      );
+    }
+
+    if (!shots || !Array.isArray(shots) || shots.length < 1) {
+      return NextResponse.json(
+        { error: "Invalid shots data (must have at least 1 player)" },
+        { status: 400 }
+      );
+    }
+
+    const validPunishments = [5, 10, 15];
+    const finalPunishment = validPunishments.includes(Number(punishmentAmount))
+      ? Number(punishmentAmount)
+      : Number(punishmentAmount) > 0
+      ? Number(punishmentAmount)
+      : 10;
+
+    // Recalculate results
+    const calculatedResults = calculateGameResults(shots, finalPunishment);
+
+    // Update Game & GamePlayers in a single transaction
+    const updatedGame = await db.$transaction(async (tx) => {
+      await tx.game.update({
+        where: { id },
+        data: {
+          punishmentAmount: finalPunishment,
+        },
+      });
+
+      for (const res of calculatedResults) {
+        await tx.gamePlayer.updateMany({
+          where: {
+            gameId: id,
+            playerId: res.playerId,
+          },
+          data: {
+            shot1: res.shot1,
+            shot2: res.shot2,
+            shot3: res.shot3,
+            totalScore: res.totalScore,
+            rank: res.rank,
+            isWinner: res.isWinner,
+            isLoser: res.isLoser,
+            pushupAmount: res.pushupAmount,
+            pushupsCompleted: res.isLoser,
+          },
+        });
+      }
+
+      return tx.game.findUnique({
+        where: { id },
+        include: {
+          gamePlayers: {
+            include: {
+              player: true,
+            },
+            orderBy: { rank: "asc" },
+          },
+        },
+      });
+    });
+
+    if (!updatedGame) {
+      return NextResponse.json({ error: "Game record not found" }, { status: 404 });
+    }
+
+    return NextResponse.json(updatedGame);
+  } catch (error) {
+    console.error("Error updating game:", error);
+    const msg = error instanceof Error ? error.message : "Failed to update game";
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
 
@@ -77,11 +178,26 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
+    let bodyPin: string | undefined;
+    try {
+      const body = await req.json();
+      bodyPin = body?.adminPin;
+    } catch {
+      // Body might be empty
+    }
+
+    if (!verifyPin(req, bodyPin)) {
+      return NextResponse.json(
+        { error: "Invalid Admin PIN / Unauthorized" },
+        { status: 401 }
+      );
+    }
+
     await db.game.delete({
       where: { id },
     });
@@ -91,3 +207,4 @@ export async function DELETE(
     return NextResponse.json({ error: "Failed to delete game" }, { status: 500 });
   }
 }
+

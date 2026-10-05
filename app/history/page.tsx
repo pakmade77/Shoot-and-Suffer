@@ -9,11 +9,15 @@ import {
   Dumbbell,
   Trash2,
   ExternalLink,
-  Filter,
+  Edit3,
+  Lock,
 } from "lucide-react";
 import { PlayerAvatar } from "@/components/ui/PlayerAvatar";
+import { AdminPinModal } from "@/components/game/AdminPinModal";
+import { EditGameModal } from "@/components/game/EditGameModal";
 import { formatDate } from "@/lib/utils";
 import { sounds } from "@/lib/sound";
+import { isSessionAdminVerified, getClientAdminPin } from "@/lib/auth";
 
 interface GameRecord {
   id: string;
@@ -44,6 +48,14 @@ export default function HistoryPage() {
   const [games, setGames] = useState<GameRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // Admin Modal States
+  const [isPinModalOpen, setIsPinModalOpen] = useState(false);
+  const [pendingAction, setPendingAction] = useState<
+    { type: "edit"; game: GameRecord } | { type: "delete"; gameId: string } | null
+  >(null);
+  const [verifiedAdminPin, setVerifiedAdminPin] = useState<string>("");
+  const [editingGame, setEditingGame] = useState<GameRecord | null>(null);
+
   const fetchHistory = useCallback(async () => {
     try {
       setLoading(true);
@@ -63,19 +75,62 @@ export default function HistoryPage() {
     fetchHistory();
   }, [fetchHistory]);
 
-  const handleDeleteGame = async (gameId: string) => {
-    if (!window.confirm("Are you sure you want to delete this match record?")) {
+  const handleTriggerEdit = (game: GameRecord) => {
+    sounds.playClick();
+    if (isSessionAdminVerified()) {
+      setVerifiedAdminPin(getClientAdminPin());
+      setEditingGame(game);
+    } else {
+      setPendingAction({ type: "edit", game });
+      setIsPinModalOpen(true);
+    }
+  };
+
+  const handleTriggerDelete = (gameId: string) => {
+    sounds.playClick();
+    if (isSessionAdminVerified()) {
+      executeDelete(gameId, getClientAdminPin());
+    } else {
+      setPendingAction({ type: "delete", gameId });
+      setIsPinModalOpen(true);
+    }
+  };
+
+  const executeDelete = async (gameId: string, pin: string) => {
+    if (!window.confirm("Are you sure you want to permanently delete this match record?")) {
       return;
     }
     try {
-      const res = await fetch(`/api/games/${gameId}`, { method: "DELETE" });
+      const res = await fetch(`/api/games/${gameId}`, {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-pin": pin,
+        },
+        body: JSON.stringify({ adminPin: pin }),
+      });
       if (res.ok) {
         sounds.playClick();
         await fetchHistory();
+      } else {
+        const data = await res.json();
+        alert(data.error || "Failed to delete record");
       }
     } catch (err) {
       console.error(err);
     }
+  };
+
+  const handlePinSuccess = (pin: string) => {
+    setVerifiedAdminPin(pin);
+    setIsPinModalOpen(false);
+
+    if (pendingAction?.type === "edit") {
+      setEditingGame(pendingAction.game);
+    } else if (pendingAction?.type === "delete") {
+      executeDelete(pendingAction.gameId, pin);
+    }
+    setPendingAction(null);
   };
 
   return (
@@ -135,17 +190,28 @@ export default function HistoryPage() {
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <Link
-                      href={`/game/result/${game.id}`}
-                      className="inline-flex items-center gap-1 text-xs font-bold text-hoop-orange hover:text-hoop-amber uppercase tracking-wide"
-                    >
-                      View Result <ExternalLink className="w-3 h-3" />
-                    </Link>
                     <button
                       type="button"
-                      onClick={() => handleDeleteGame(game.id)}
-                      className="rounded-lg p-1.5 text-gray-500 hover:bg-rose-500/20 hover:text-rose-400 transition-colors"
-                      title="Delete Record"
+                      onClick={() => handleTriggerEdit(game)}
+                      className="inline-flex items-center gap-1 text-xs font-bold text-hoop-amber hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 px-3 py-1.5 rounded-xl uppercase tracking-wide transition-all"
+                      title="Edit Match (Admin PIN Required)"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                      <span>Edit Skor</span>
+                    </button>
+
+                    <Link
+                      href={`/game/result/${game.id}`}
+                      className="inline-flex items-center gap-1 text-xs font-bold text-hoop-orange hover:text-hoop-amber bg-hoop-orange/10 hover:bg-hoop-orange/20 border border-hoop-orange/20 px-3 py-1.5 rounded-xl uppercase tracking-wide transition-all"
+                    >
+                      <span>View</span> <ExternalLink className="w-3 h-3" />
+                    </Link>
+
+                    <button
+                      type="button"
+                      onClick={() => handleTriggerDelete(game.id)}
+                      className="rounded-xl p-2 text-gray-400 hover:bg-rose-500/20 hover:text-rose-400 border border-transparent hover:border-rose-500/30 transition-colors"
+                      title="Delete Record (Admin PIN Required)"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -233,6 +299,33 @@ export default function HistoryPage() {
           })}
         </div>
       )}
+
+      {/* ADMIN PIN VERIFICATION MODAL */}
+      <AdminPinModal
+        isOpen={isPinModalOpen}
+        onSuccess={handlePinSuccess}
+        onClose={() => {
+          setIsPinModalOpen(false);
+          setPendingAction(null);
+        }}
+      />
+
+      {/* EDIT GAME MODAL */}
+      {editingGame && (
+        <EditGameModal
+          isOpen={Boolean(editingGame)}
+          gameId={editingGame.id}
+          initialPlayers={editingGame.gamePlayers}
+          initialPunishment={editingGame.punishmentAmount}
+          adminPin={verifiedAdminPin}
+          onSuccess={() => {
+            setEditingGame(null);
+            fetchHistory();
+          }}
+          onClose={() => setEditingGame(null)}
+        />
+      )}
     </div>
   );
 }
+
