@@ -60,7 +60,7 @@ interface GameSummary {
 
 export default function HomePage() {
   const [loading, setLoading] = useState(true);
-  const [showEntrance, setShowEntrance] = useState(true);
+  const [showEntrance, setShowEntrance] = useState(false);
   const [champion, setChampion] = useState<LeaderboardPlayer | null>(null);
   const [pushupKing, setPushupKing] = useState<LeaderboardPlayer | null>(null);
   const [todayLeaderboard, setTodayLeaderboard] = useState<LeaderboardPlayer[]>([]);

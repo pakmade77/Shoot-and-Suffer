@@ -17,16 +17,20 @@ class SoundManager {
   }
 
   private initCtx() {
-    if (!this.ctx && typeof window !== "undefined") {
-      const AudioCtx =
-        window.AudioContext ||
-        (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-      if (AudioCtx) {
-        this.ctx = new AudioCtx();
+    try {
+      if (!this.ctx && typeof window !== "undefined") {
+        const AudioCtx =
+          window.AudioContext ||
+          (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+        if (AudioCtx) {
+          this.ctx = new AudioCtx();
+        }
       }
-    }
-    if (this.ctx && this.ctx.state === "suspended") {
-      this.ctx.resume();
+      if (this.ctx && this.ctx.state === "suspended") {
+        this.ctx.resume().catch(() => {});
+      }
+    } catch {
+      // Audio not permitted or supported
     }
   }
 
@@ -102,11 +106,14 @@ class SoundManager {
       utterance.volume = 0.9;
       
       // Prefer English voice for arcade punchiness, or fallback to default
-      const voices = window.speechSynthesis.getVoices();
-      const preferred = voices.find(
-        (v) => v.lang.startsWith("en") && (v.name.includes("Google") || v.name.includes("Natural") || v.name.includes("David"))
-      ) || voices[0];
-      if (preferred) utterance.voice = preferred;
+      const rawVoices = window.speechSynthesis.getVoices();
+      const voices = Array.isArray(rawVoices) ? rawVoices : [];
+      if (voices.length > 0) {
+        const preferred = voices.find(
+          (v) => v.lang && v.lang.startsWith("en") && (v.name.includes("Google") || v.name.includes("Natural") || v.name.includes("David"))
+        ) || voices[0];
+        if (preferred) utterance.voice = preferred;
+      }
 
       window.speechSynthesis.speak(utterance);
     } catch {

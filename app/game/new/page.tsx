@@ -10,6 +10,7 @@ import {
   Users,
   AlertTriangle,
   Shuffle,
+  Play,
   Sliders,
   Plus,
   Minus,
@@ -108,19 +109,41 @@ export default function NewGamePage() {
       return;
     }
 
-    sounds.playClick();
+    try {
+      sounds.playClick();
+    } catch {
+      // Ignore
+    }
     setIsShuffleModalOpen(true);
   };
 
+  const handleStartInstantly = () => {
+    if (selectedPlayerIds.length < 1) {
+      setError("Please select at least 1 player to start the game.");
+      return;
+    }
+    try {
+      sounds.playBuzzer();
+    } catch {
+      // Ignore
+    }
+    const selectedPlayers = players.filter((p) => selectedPlayerIds.includes(p.id));
+    handleConfirmShuffledGame(selectedPlayers);
+  };
+
   const handleConfirmShuffledGame = (shuffledPlayers: Player[]) => {
-    sessionStorage.setItem(
-      "current_game_setup",
-      JSON.stringify({
-        players: shuffledPlayers,
-        punishmentAmount,
-        shootingMode,
-      })
-    );
+    try {
+      sessionStorage.setItem(
+        "current_game_setup",
+        JSON.stringify({
+          players: shuffledPlayers,
+          punishmentAmount,
+          shootingMode,
+        })
+      );
+    } catch (e) {
+      console.error("Failed to save game setup to sessionStorage", e);
+    }
 
     router.push("/game/play");
   };
@@ -589,16 +612,27 @@ export default function NewGamePage() {
         </div>
       </section>
 
-      {/* STEP 4: START GAME BUTTON */}
-      <div className="pt-2">
+      {/* STEP 4: START GAME BUTTONS */}
+      <div className="pt-2 grid grid-cols-1 sm:grid-cols-4 gap-2.5">
         <button
           type="button"
           onClick={handleStartGame}
           disabled={selectedPlayerIds.length < 1}
-          className="w-full flex items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-hoop-orange via-hoop-glow to-hoop-amber p-4 text-base sm:text-lg font-black uppercase tracking-wider text-white shadow-xl shadow-hoop-orange/30 hover:scale-[1.01] active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 transition-all"
+          className="sm:col-span-3 flex items-center justify-center gap-3 rounded-2xl bg-gradient-to-r from-hoop-orange via-hoop-glow to-hoop-amber p-4 text-base sm:text-lg font-black uppercase tracking-wider text-white shadow-xl shadow-hoop-orange/30 hover:scale-[1.01] active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100 transition-all"
         >
           <Shuffle className="w-5 h-5" />
           START GAME &amp; SHUFFLE LINEUP ({selectedPlayerIds.length} SHOOTERS)
+        </button>
+
+        <button
+          type="button"
+          onClick={handleStartInstantly}
+          disabled={selectedPlayerIds.length < 1}
+          className="sm:col-span-1 flex items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/5 hover:bg-white/10 p-4 text-xs sm:text-sm font-black uppercase tracking-wider text-gray-200 hover:text-white shadow-lg disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+          title="Start match immediately without lineup shuffle"
+        >
+          <Play className="w-4 h-4 fill-white" />
+          Direct Start
         </button>
       </div>
 

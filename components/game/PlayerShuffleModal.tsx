@@ -22,6 +22,7 @@ interface PlayerShuffleModalProps<T extends ShufflePlayer> {
 
 // Fisher-Yates True Shuffle
 function shuffleArray<T>(array: T[]): T[] {
+  if (!array || array.length <= 1) return [...(array || [])];
   const result = [...array];
   for (let i = result.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
@@ -36,99 +37,85 @@ export function PlayerShuffleModal<T extends ShufflePlayer>({
   onConfirm,
   onClose,
 }: PlayerShuffleModalProps<T>) {
-  const [isShuffling, setIsShuffling] = useState(true);
-  const [displayList, setDisplayList] = useState<T[]>([]);
-  const [countdown, setCountdown] = useState<number>(5);
-  const [autoStartEnabled, setAutoStartEnabled] = useState<boolean>(true);
+  const [isShuffling, setIsShuffling] = useState(false);
+  const [shuffledList, setShuffledList] = useState<T[]>([]);
+  const [countdown, setCountdown] = useState<number>(3);
+  const [autoStart, setAutoStart] = useState<boolean>(true);
 
-  const shuffleIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const finalShuffledRef = useRef<T[]>([]);
-
-  const startShuffleAnimation = useCallback(() => {
+  // Safe shuffle handler
+  const performShuffle = useCallback(() => {
+    if (!players || players.length === 0) return;
     setIsShuffling(true);
-    setAutoStartEnabled(true);
-    setCountdown(5);
+    setAutoStart(true);
+    setCountdown(3);
 
-    if (countdownIntervalRef.current) {
-      clearInterval(countdownIntervalRef.current);
-      countdownIntervalRef.current = null;
+    // Initial scramble
+    setShuffledList(shuffleArray(players));
+
+    try {
+      sounds.playClick();
+    } catch {
+      // Ignore
     }
 
-    let elapsed = 0;
-    const duration = 2200; // 2.2 seconds shuffle
-    const intervalTime = 70; // 70ms tick
-
-    if (shuffleIntervalRef.current) {
-      clearInterval(shuffleIntervalRef.current);
-    }
-
-    shuffleIntervalRef.current = setInterval(() => {
-      elapsed += intervalTime;
-      // Scramble for visual effect
-      setDisplayList(shuffleArray(players));
-      sounds.playShuffleTick();
-
-      if (elapsed >= duration) {
-        if (shuffleIntervalRef.current) {
-          clearInterval(shuffleIntervalRef.current);
-          shuffleIntervalRef.current = null;
-        }
-
-        // Final confirmed random order
-        const finalOrder = shuffleArray(players);
-        finalShuffledRef.current = finalOrder;
-        setDisplayList(finalOrder);
-        setIsShuffling(false);
+    // Finish shuffle after 800ms
+    const timer = setTimeout(() => {
+      const finalResult = shuffleArray(players);
+      setShuffledList(finalResult);
+      setIsShuffling(false);
+      try {
         sounds.playDrawReveal();
+      } catch {
+        // Ignore
       }
-    }, intervalTime);
+    }, 800);
+
+    return () => clearTimeout(timer);
   }, [players]);
 
-  // Start shuffle on modal open
+  // Trigger shuffle on modal open
   useEffect(() => {
     if (isOpen && players.length > 0) {
-      startShuffleAnimation();
+      performShuffle();
     }
+  }, [isOpen, players, performShuffle]);
 
-    return () => {
-      if (shuffleIntervalRef.current) clearInterval(shuffleIntervalRef.current);
-      if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
-    };
-  }, [isOpen, players, startShuffleAnimation]);
-
-  // Countdown timer after shuffle finishes
+  // Handle countdown timer safely
   useEffect(() => {
-    if (!isShuffling && isOpen && autoStartEnabled) {
-      countdownIntervalRef.current = setInterval(() => {
-        setCountdown((prev) => {
-          if (prev <= 1) {
-            if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
-            onConfirm(finalShuffledRef.current.length > 0 ? finalShuffledRef.current : displayList);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
+    if (!isOpen || isShuffling || !autoStart) return;
+
+    if (countdown <= 0) {
+      const targetList = shuffledList.length > 0 ? shuffledList : players;
+      onConfirm(targetList);
+      return;
     }
 
-    return () => {
-      if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
-    };
-  }, [isShuffling, isOpen, autoStartEnabled, displayList, onConfirm]);
+    const timer = setTimeout(() => {
+      setCountdown((c) => c - 1);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [isOpen, isShuffling, autoStart, countdown, shuffledList, players, onConfirm]);
 
   if (!isOpen) return null;
 
-  const handleManualStart = () => {
-    if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
-    sounds.playBuzzer();
-    onConfirm(finalShuffledRef.current.length > 0 ? finalShuffledRef.current : displayList);
+  const handleStartNow = () => {
+    setAutoStart(false);
+    try {
+      sounds.playBuzzer();
+    } catch {
+      // Ignore
+    }
+    const targetList = shuffledList.length > 0 ? shuffledList : players;
+    onConfirm(targetList);
   };
 
   const handleReshuffle = () => {
-    setAutoStartEnabled(false);
-    startShuffleAnimation();
+    setAutoStart(false);
+    performShuffle();
   };
+
+  const currentDisplayList = shuffledList.length > 0 ? shuffledList : players;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -137,7 +124,7 @@ export function PlayerShuffleModal<T extends ShufflePlayer>({
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="absolute inset-0 bg-black/85 backdrop-blur-md"
+        className="fixed inset-0 bg-black/85 backdrop-blur-md"
         onClick={onClose}
       />
 
@@ -176,15 +163,15 @@ export function PlayerShuffleModal<T extends ShufflePlayer>({
         </div>
 
         {/* SHUFFLED PLAYER LIST */}
-        <div className="space-y-2.5 max-h-[340px] overflow-y-auto pr-1">
+        <div className="space-y-2.5 max-h-[320px] overflow-y-auto pr-1">
           <AnimatePresence mode="popLayout">
-            {displayList.map((player, idx) => {
+            {currentDisplayList.map((player, idx) => {
               const isFirst = idx === 0;
               return (
                 <motion.div
                   key={player.id}
                   layout
-                  initial={{ opacity: 0, scale: 0.8 }}
+                  initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.15 }}
                   className={`flex items-center justify-between rounded-2xl border p-3 transition-all ${
@@ -243,13 +230,13 @@ export function PlayerShuffleModal<T extends ShufflePlayer>({
           </AnimatePresence>
         </div>
 
-        {/* BOTTOM ACTION BAR & AUTO-START COUNTDOWN */}
+        {/* BOTTOM ACTION BAR */}
         <div className="mt-6 pt-4 border-t border-white/10 space-y-3">
           {!isShuffling && (
             <div className="flex items-center justify-between text-xs text-gray-400">
               <span className="flex items-center gap-1.5 font-medium">
                 <Zap className="w-3.5 h-3.5 text-champion-gold" />
-                {autoStartEnabled && countdown > 0
+                {autoStart && countdown > 0
                   ? `Auto-starting in ${countdown}s...`
                   : "Ready for tip-off!"}
               </span>
@@ -268,7 +255,7 @@ export function PlayerShuffleModal<T extends ShufflePlayer>({
               type="button"
               onClick={handleReshuffle}
               disabled={isShuffling}
-              className="flex items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/5 py-3 text-xs font-black uppercase tracking-wider text-gray-200 hover:bg-white/10 hover:text-white transition-all disabled:opacity-50"
+              className="flex items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/5 py-3.5 text-xs font-black uppercase tracking-wider text-gray-200 hover:bg-white/10 hover:text-white transition-all disabled:opacity-50 active:scale-95"
             >
               <Shuffle className="w-4 h-4" />
               Shuffle Again
@@ -276,12 +263,12 @@ export function PlayerShuffleModal<T extends ShufflePlayer>({
 
             <button
               type="button"
-              onClick={handleManualStart}
+              onClick={handleStartNow}
               disabled={isShuffling}
-              className="flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-hoop-orange to-hoop-amber py-3 text-xs font-black uppercase tracking-wider text-white shadow-lg shadow-hoop-orange/25 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
+              className="flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-hoop-orange to-hoop-amber py-3.5 text-xs font-black uppercase tracking-wider text-white shadow-lg shadow-hoop-orange/25 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
             >
               <Play className="w-4 h-4 fill-white" />
-              Start Game!
+              Start Game Now!
             </button>
           </div>
         </div>
