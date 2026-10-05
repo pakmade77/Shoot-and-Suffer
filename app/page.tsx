@@ -16,7 +16,6 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { PlayerAvatar } from "@/components/ui/PlayerAvatar";
-import { BasketballEntrance } from "@/components/ui/BasketballEntrance";
 import { formatDateShort } from "@/lib/utils";
 import { sounds } from "@/lib/sound";
 
@@ -60,7 +59,6 @@ interface GameSummary {
 
 export default function HomePage() {
   const [loading, setLoading] = useState(true);
-  const [showEntrance, setShowEntrance] = useState(false);
   const [champion, setChampion] = useState<LeaderboardPlayer | null>(null);
   const [pushupKing, setPushupKing] = useState<LeaderboardPlayer | null>(null);
   const [todayLeaderboard, setTodayLeaderboard] = useState<LeaderboardPlayer[]>([]);
@@ -100,11 +98,6 @@ export default function HomePage() {
 
   return (
     <div className="space-y-6 sm:space-y-8 animate-in fade-in duration-300">
-      {/* 🏀 BASKETBALL ENTRANCE ANIMATION OVERLAY */}
-      {showEntrance && (
-        <BasketballEntrance onComplete={() => setShowEntrance(false)} />
-      )}
-
       {/* HERO BANNER */}
       <section className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-br from-surface via-surface-light to-surface p-6 sm:p-8 shadow-2xl">
         <div className="absolute -top-16 -right-16 h-64 w-64 rounded-full bg-hoop-orange/15 blur-3xl" />
@@ -129,23 +122,11 @@ export default function HomePage() {
           <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
             <Link
               href="/game/new"
-              className="flex-1 md:flex-initial inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-hoop-orange to-hoop-amber px-6 py-4 text-base font-black text-white shadow-xl shadow-hoop-orange/30 hover:scale-[1.03] active:scale-[0.98] transition-all"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-hoop-orange to-hoop-amber px-8 py-4 text-base font-black text-white shadow-xl shadow-hoop-orange/30 hover:scale-[1.03] active:scale-[0.98] transition-all"
             >
               <Play className="w-5 h-5 fill-white" />
               START QUICK GAME
             </Link>
-
-            <button
-              type="button"
-              onClick={() => {
-                sounds.playClick();
-                setShowEntrance(true);
-              }}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/15 bg-white/5 px-4 py-4 text-sm font-bold text-gray-200 hover:bg-white/15 hover:text-white transition-all shadow-lg"
-              title="Replay Entrance Animation"
-            >
-              <span>🏀 Intro FX</span>
-            </button>
           </div>
         </div>
 
