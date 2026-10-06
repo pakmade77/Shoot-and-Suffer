@@ -99,6 +99,32 @@ export default function GameResultPage({
     fetchGame();
   }, [fetchGame]);
 
+  const handleShareWhatsApp = () => {
+    if (!game) return;
+    sounds.playClick();
+    const sorted = [...game.gamePlayers].sort((a, b) => a.rank - b.rank);
+    const winners = sorted.filter((gp) => gp.isWinner).map((gp) => gp.player.name);
+    const losers = sorted.filter((gp) => gp.isLoser);
+    const lines = [
+      "🏀 *SHOOT & SUFFER* 🏀",
+      "",
+      `🏆 Juara: *${winners.join(", ") || "-"}*`,
+      ...losers.map(
+        (l) => `💀 Kalah: *${l.player.name}* — ${l.pushupAmount} push-up`
+      ),
+      "",
+      "📊 Skor:",
+      ...sorted.map((gp) => `${gp.rank}. ${gp.player.name} — ${gp.totalScore}`),
+      "",
+      "https://shoot-and-suffer.vercel.app",
+    ];
+    window.open(
+      `https://wa.me/?text=${encodeURIComponent(lines.join("\n"))}`,
+      "_blank",
+      "noopener,noreferrer"
+    );
+  };
+
   const handleTriggerEdit = () => {
     sounds.playClick();
     if (isSessionAdminVerified()) {
@@ -365,6 +391,13 @@ export default function GameResultPage({
 
       {/* SECTION 4: ACTION NAVIGATION BUTTONS */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <button
+          type="button"
+          onClick={handleShareWhatsApp}
+          className="sm:col-span-3 flex min-h-[50px] items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-black uppercase tracking-wider text-white shadow-lg hover:scale-[1.01] active:scale-[0.98] transition-all"
+        >
+          📲 Share ke WhatsApp
+        </button>
         <button
           type="button"
           onClick={handleRematch}

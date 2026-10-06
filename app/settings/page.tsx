@@ -535,69 +535,6 @@ export default function SettingsPage() {
         </div>
       </section>
 
-      {/* ADMIN PIN & SECURITY */}
-      <section className="rounded-3xl border border-white/10 bg-surface/80 p-6 backdrop-blur-md space-y-4">
-        <h2 className="text-base font-black uppercase text-white tracking-wide flex items-center gap-2">
-          <ShieldAlert className="w-5 h-5 text-champion-gold" />
-          Admin PIN &amp; Score Editing Security
-        </h2>
-        <p className="text-xs text-gray-400">
-          Set the secret 4-6 digit PIN required to edit match history scores, recalculate rankings, and delete games.
-        </p>
-
-        <div className="space-y-3 pt-1">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-2xl border border-white/5 bg-white/[0.02] p-4">
-            <div>
-              <p className="text-sm font-bold text-white">Custom Admin PIN</p>
-              <p className="text-xs text-gray-400">
-                Default PIN is <strong className="text-champion-gold font-black">8888</strong>.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <input
-                type="password"
-                maxLength={6}
-                placeholder="4-6 Digits"
-                id="admin-pin-input"
-                className="h-10 w-28 text-center text-sm font-black text-white bg-black/50 border border-white/20 rounded-xl focus:border-hoop-orange focus:outline-none"
-              />
-              <button
-                type="button"
-                onClick={() => {
-                  const input = document.getElementById("admin-pin-input") as HTMLInputElement;
-                  if (input && input.value.trim().length >= 4) {
-                    localStorage.setItem("shoot_suffer_admin_pin", input.value.trim());
-                    sounds.playVictory();
-                    alert("Admin PIN updated successfully!");
-                    input.value = "";
-                  } else {
-                    sounds.playBrick();
-                    alert("PIN must be at least 4 digits.");
-                  }
-                }}
-                className="h-10 px-4 rounded-xl bg-hoop-orange text-white text-xs font-black uppercase hover:bg-hoop-amber transition-colors shadow-md"
-              >
-                Save PIN
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  localStorage.removeItem("shoot_suffer_admin_pin");
-                  sessionStorage.removeItem("shoot_suffer_admin_auth");
-                  sounds.playClick();
-                  alert("Admin PIN reset to default (8888)");
-                }}
-                className="h-10 px-3 rounded-xl border border-white/10 bg-white/5 text-gray-400 text-xs font-bold uppercase hover:text-white hover:bg-white/10 transition-colors"
-                title="Reset to 8888"
-              >
-                Reset (8888)
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* DATABASE MANAGEMENT */}
       <section className="rounded-3xl border border-rose-500/20 bg-surface/80 p-6 backdrop-blur-md space-y-4">
         <h2 className="text-base font-black uppercase text-rose-400 tracking-wide flex items-center gap-2">
@@ -673,7 +610,7 @@ export default function SettingsPage() {
       <AdminPinModal
         isOpen={isPinModalOpen}
         title="Admin PIN Reset Authorization"
-        description="Masukkan 4-digit Admin PIN sebelum melakukan operasi reset database (Default: 8888)."
+        description="Masukkan 4-digit Admin PIN sebelum melakukan operasi reset database."
         onSuccess={handlePinSuccess}
         onClose={() => {
           setIsPinModalOpen(false);

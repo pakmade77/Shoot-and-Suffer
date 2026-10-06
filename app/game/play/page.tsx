@@ -21,7 +21,13 @@ import {
 import { ShotButton } from "@/components/game/ShotButton";
 import { PlayerAvatar } from "@/components/ui/PlayerAvatar";
 import { sounds } from "@/lib/sound";
-import { getGameSetup, clearGameSetup } from "@/lib/gameSession";
+import {
+  getGameSetup,
+  clearGameSetup,
+  saveGameProgress,
+  getGameProgress,
+  clearGameProgress,
+} from "@/lib/gameSession";
 
 interface PlayerSetup {
   id: string;
@@ -61,6 +67,8 @@ export default function PlayGamePage() {
   const [suddenDeathShots, setSuddenDeathShots] = useState<Record<string, boolean | null>>({});
   const [showSuddenDeathModal, setShowSuddenDeathModal] = useState<boolean>(false);
   const [suddenDeathAlertMessage, setSuddenDeathAlertMessage] = useState<string | null>(null);
+  const [showExitConfirm, setShowExitConfirm] = useState<boolean>(false);
+  const [progressRestored, setProgressRestored] = useState<boolean>(false);
 
   useEffect(() => {
     async function initSession() {
@@ -71,14 +79,31 @@ export default function PlayGamePage() {
         if (setup.shootingMode === "consecutive" || setup.shootingMode === "round_by_round") {
           setShootingMode(setup.shootingMode);
         }
-        setPlayerShots(
-          setup.players.map((p: PlayerSetup) => ({
-            playerId: p.id,
-            shot1: null,
-            shot2: null,
-            shot3: null,
-          }))
-        );
+        const freshShots: PlayerShotState[] = setup.players.map((p: PlayerSetup) => ({
+          playerId: p.id,
+          shot1: null,
+          shot2: null,
+          shot3: null,
+        }));
+        const saved = getGameProgress();
+        const sameRoster =
+          saved &&
+          saved.playerIds.length === setup.players.length &&
+          saved.playerIds.every((pid: string, i: number) => pid === setup.players[i].id);
+        if (saved && sameRoster) {
+          setShootingMode(saved.shootingMode);
+          setPlayerIndex(saved.playerIndex);
+          setCurrentRound(saved.currentRound);
+          setRoundPlayerIndex(saved.roundPlayerIndex);
+          setPlayerShots(saved.playerShots.length > 0 ? saved.playerShots : freshShots);
+          setIsSuddenDeath(saved.isSuddenDeath);
+          setSuddenDeathRound(saved.suddenDeathRound);
+          setSuddenDeathPlayerIndex(saved.suddenDeathPlayerIndex);
+          setSuddenDeathShots(saved.suddenDeathShots);
+        } else {
+          setPlayerShots(freshShots);
+        }
+        setProgressRestored(true);
         return;
       }
 
@@ -155,6 +180,34 @@ export default function PlayGamePage() {
     }
   }, [activeIndex, currentRound, isSuddenDeath, suddenDeathRound, currentPlayer?.name]);
 
+  // Persist in-progress game so refresh / closed tab can resume
+  useEffect(() => {
+    if (!progressRestored || players.length === 0 || playerShots.length === 0) return;
+    saveGameProgress({
+      playerIds: players.map((p) => p.id),
+      shootingMode,
+      playerIndex,
+      currentRound,
+      roundPlayerIndex,
+      playerShots,
+      isSuddenDeath,
+      suddenDeathRound,
+      suddenDeathPlayerIndex,
+      suddenDeathShots,
+    });
+  }, [
+    progressRestored,
+    players,
+    shootingMode,
+    playerIndex,
+    currentRound,
+    roundPlayerIndex,
+    playerShots,
+    isSuddenDeath,
+    suddenDeathRound,
+    suddenDeathPlayerIndex,
+    suddenDeathShots,
+  ]);
   if (players.length === 0 || playerShots.length === 0) {
     return (
       <div className="flex h-64 items-center justify-center text-gray-400">
@@ -423,8 +476,127 @@ export default function PlayGamePage() {
     );
   };
 
+  // Undo last recorded shot: clear current shot, or step back and clear previous one
+  const handleUndo = () => {
+    sounds.playClick();
+    setError(null);
+    setSuddenDeathAlertMessage(null);
+
+    const clearShot = (idx: number, key: "shot1" | "shot2" | "shot3") => {
+      setPlayerShots((prev) => {
+        const copy = [...prev];
+        if (copy[idx]) copy[idx] = { ...copy[idx], [key]: null };
+        return copy;
+      });
+    };
+
+    if (isSuddenDeath) {
+      if (isSuddenDeathShotComplete) {
+        setSuddenDeathShots((prev) => ({ ...prev, [currentPlayer.id]: null }));
+      } else if (suddenDeathPlayerIndex > 0) {
+        const prevPlayer = players[suddenDeathPlayerIndex - 1];
+        setSuddenDeathShots((prev) => ({ ...prev, [prevPlayer.id]: null }));
+        setSuddenDeathPlayerIndex((prev) => prev - 1);
+      }
+      return;
+    }
+
+    if (shootingMode === "round_by_round") {
+      if (isRoundShotComplete) {
+        clearShot(activeIndex, activeRoundShotKey);
+      } else if (roundPlayerIndex > 0) {
+        clearShot(roundPlayerIndex - 1, activeRoundShotKey);
+        setRoundPlayerIndex((prev) => prev - 1);
+      } else if (currentRound > 1) {
+        const prevRound = (currentRound - 1) as 1 | 2 | 3;
+        clearShot(players.length - 1, `shot${prevRound}` as "shot1" | "shot2" | "shot3");
+        setCurrentRound(prevRound);
+        setRoundPlayerIndex(players.length - 1);
+      }
+      return;
+    }
+
+    // Consecutive: clear the last recorded shot of the current player, else go back one player
+    const order: Array<"shot3" | "shot2" | "shot1"> = ["shot3", "shot2", "shot1"];
+    const lastKey = order.find((k) => currentShots[k] !== null);
+    if (lastKey) {
+      clearShot(activeIndex, lastKey);
+    } else if (playerIndex > 0) {
+      clearShot(playerIndex - 1, "shot3");
+      setPlayerIndex((prev) => prev - 1);
+    }
+  };
+
+  const handleConfirmExit = () => {
+    sounds.playClick();
+    clearGameSetup();
+    router.push("/");
+  };
+
   return (
     <div className="max-w-xl mx-auto space-y-6 animate-in fade-in duration-300">
+      {/* EXIT CONFIRM MODAL */}
+      <AnimatePresence>
+        {showExitConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/80 backdrop-blur-md"
+              onClick={() => setShowExitConfirm(false)}
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="relative z-10 w-full max-w-sm rounded-3xl border border-white/10 bg-surface p-6 text-center shadow-2xl space-y-4"
+            >
+              <h3 className="text-xl font-black uppercase text-white">Keluar dari game?</h3>
+              <p className="text-xs text-gray-400">
+                Progres game yang sedang berjalan akan dihapus dan tidak bisa dilanjutkan.
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowExitConfirm(false)}
+                  className="rounded-2xl border border-white/10 bg-white/5 py-3 text-sm font-black uppercase text-gray-200 hover:bg-white/10"
+                >
+                  Lanjut Main
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmExit}
+                  className="rounded-2xl bg-rose-600 py-3 text-sm font-black uppercase text-white hover:bg-rose-500"
+                >
+                  Keluar
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* GAME TOOLBAR: EXIT & UNDO */}
+      <div className="flex items-center justify-between gap-2">
+        <button
+          type="button"
+          onClick={() => {
+            sounds.playClick();
+            setShowExitConfirm(true);
+          }}
+          className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-black uppercase text-gray-300 hover:bg-white/10 hover:text-white transition-colors"
+        >
+          <X className="w-3.5 h-3.5" /> Keluar
+        </button>
+        <button
+          type="button"
+          onClick={handleUndo}
+          className="inline-flex items-center gap-1.5 rounded-xl border border-white/10 bg-white/5 px-3 py-1.5 text-xs font-black uppercase text-gray-300 hover:bg-white/10 hover:text-white transition-colors"
+        >
+          <RefreshCw className="w-3.5 h-3.5" /> Undo
+        </button>
+      </div>
       {/* SUDDEN DEATH ALERT MODAL */}
       <AnimatePresence>
         {showSuddenDeathModal && (

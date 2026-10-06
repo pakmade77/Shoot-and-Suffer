@@ -2,14 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { calculateGameResults, ShotInput } from "@/lib/calculations";
 
-function verifyPin(req: NextRequest, bodyPin?: string): boolean {
-  const headerPin = req.headers.get("x-admin-pin");
-  const expectedPin = process.env.ADMIN_PIN || "8888";
-  const provided = (bodyPin || headerPin || "").trim();
-
-  // Allow default PIN 8888 or matching configured PIN
-  return provided === expectedPin || provided === "8888" || provided.length >= 4;
-}
+import { verifyAdminPin as verifyPin } from "@/lib/adminPin";
 
 export async function GET(
   _req: NextRequest,

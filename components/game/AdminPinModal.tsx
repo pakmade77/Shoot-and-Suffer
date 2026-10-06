@@ -65,7 +65,7 @@ export function AdminPinModal({
 
   const verify = (enteredPin: string) => {
     const validPin = getClientAdminPin();
-    if (enteredPin === validPin || enteredPin === "8888") {
+    if (enteredPin === validPin) {
       sounds.playVictory();
       if (rememberSession) {
         setSessionAdminVerified(true);
@@ -207,7 +207,6 @@ export function AdminPinModal({
             />
             <span>Remember session</span>
           </label>
-          <span className="text-[11px] text-gray-500 font-medium">Default: 8888</span>
         </div>
       </motion.div>
     </div>

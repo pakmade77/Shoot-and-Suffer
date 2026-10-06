@@ -1,13 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 
-function verifyPin(req: NextRequest, bodyPin?: string): boolean {
-  const headerPin = req.headers.get("x-admin-pin");
-  const expectedPin = process.env.ADMIN_PIN || "8888";
-  const provided = (bodyPin || headerPin || "").trim();
-
-  return provided === expectedPin || provided === "8888" || provided.length >= 4;
-}
+import { verifyAdminPin as verifyPin } from "@/lib/adminPin";
 
 export async function POST(req: NextRequest) {
   try {
